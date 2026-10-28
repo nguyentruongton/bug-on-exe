@@ -1,0 +1,6 @@
+.superpowers/
+dist/
+Vendor/
+build/
+*.o
+.DS_Store
