@@ -20,15 +20,30 @@ public enum DefaultAppManager {
         return list
     }
 
-    public static func isDefaultHandlerForExe() -> Bool {
-        for uti in exeUTIs {
-            if let handler = LSCopyDefaultRoleHandlerForContentType(uti as CFString, .all)?.takeRetainedValue() as String? {
-                if handler.caseInsensitiveCompare(bundleIdentifier) == .orderedSame {
-                    return true
-                }
+    public static func matchesBundleIdentifier(
+        _ targetBundleID: String,
+        primaryHandler: String?,
+        fallbackHandlers: [String]
+    ) -> Bool {
+        if let primary = primaryHandler, !primary.isEmpty {
+            return primary.caseInsensitiveCompare(targetBundleID) == .orderedSame
+        }
+        for handler in fallbackHandlers where !handler.isEmpty {
+            if handler.caseInsensitiveCompare(targetBundleID) == .orderedSame {
+                return true
             }
         }
         return false
+    }
+
+    public static func isDefaultHandlerForExe() -> Bool {
+        let utis = exeUTIs
+        let primaryUTI = utis.first ?? "com.microsoft.windows-executable"
+        let primaryHandler = LSCopyDefaultRoleHandlerForContentType(primaryUTI as CFString, .all)?.takeRetainedValue() as String?
+        let fallbacks = utis.dropFirst().compactMap {
+            LSCopyDefaultRoleHandlerForContentType($0 as CFString, .all)?.takeRetainedValue() as String?
+        }
+        return matchesBundleIdentifier(bundleIdentifier, primaryHandler: primaryHandler, fallbackHandlers: fallbacks)
     }
 
     @discardableResult

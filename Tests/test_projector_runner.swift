@@ -8,6 +8,9 @@ struct ProjectorRunnerTest {
         assert(FileManager.default.fileExists(atPath: session.swfFileURL.path))
         let recents = ProjectorRunner.recentFiles()
         assert(recents.first?.path == exeURL.path)
+        assert(AppDelegate.postFinderOpenDisposition(windowVisible: false, hadError: true) == .showLauncherWindow)
+        assert(AppDelegate.postFinderOpenDisposition(windowVisible: false, hadError: false) == .terminate)
+        assert(AppDelegate.postFinderOpenDisposition(windowVisible: true, hadError: true) == .keepOpen)
         print("ALL PROJECTOR RUNNER TESTS PASSED")
     }
 }

@@ -14,8 +14,16 @@ func assertThrowsNotFlash(_ data: Data, _ message: String) {
 @main
 struct ExtractorTestRunner {
     static func main() throws {
-        // 1. Truncated / tiny data (< 8 bytes)
+        // 1. Truncated / tiny data (< 8 bytes and 12..15 bytes range boundary)
         assertThrowsNotFlash(Data([0x4D, 0x5A, 0x90]), "tiny 3-byte file")
+        for size in 8...15 {
+            assertThrowsNotFlash(Data(repeating: 0x41, count: size), "non-Flash \(size)-byte file")
+        }
+
+        // 1b. Sliced Data subsequence with non-zero startIndex
+        let prefixAndJunk = Data(repeating: 0x99, count: 50)
+        let slicedNonZero = prefixAndJunk[10..<35]
+        assertThrowsNotFlash(slicedNonZero, "sliced Data with non-zero startIndex")
 
         // 2. Corrupt footer with swfLength > fileSize
         var badFooter = Data(repeating: 0x00, count: 32)

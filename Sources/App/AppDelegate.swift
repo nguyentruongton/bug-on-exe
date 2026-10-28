@@ -1,9 +1,22 @@
 import Foundation
 import AppKit
 
+public enum FinderOpenDisposition: Equatable {
+    case terminate
+    case showLauncherWindow
+    case keepOpen
+}
+
 public final class AppDelegate: NSObject, NSApplicationDelegate {
     private var launcherWindowController: LauncherWindowController?
     private var didOpenFileFromFinder = false
+
+    public static func postFinderOpenDisposition(windowVisible: Bool, hadError: Bool) -> FinderOpenDisposition {
+        if windowVisible {
+            return .keepOpen
+        }
+        return hadError ? .showLauncherWindow : .terminate
+    }
 
     public func applicationDidFinishLaunching(_ notification: Notification) {
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.15) { [weak self] in
@@ -55,10 +68,15 @@ public final class AppDelegate: NSObject, NSApplicationDelegate {
 
         group.notify(queue: .main) { [weak self] in
             self?.launcherWindowController?.reloadFiles()
-            if !windowVisible && !hadError {
+            switch Self.postFinderOpenDisposition(windowVisible: windowVisible, hadError: hadError) {
+            case .terminate:
                 DispatchQueue.main.asyncAfter(deadline: .now() + 1.2) {
                     NSApp.terminate(nil)
                 }
+            case .showLauncherWindow:
+                self?.showLauncherWindow()
+            case .keepOpen:
+                break
             }
         }
     }

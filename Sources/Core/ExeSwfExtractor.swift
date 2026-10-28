@@ -27,6 +27,7 @@ public enum ExeSwfExtractor {
     }
 
     public static func extract(from data: Data) throws -> SwfPayload {
+        let data = data.startIndex == 0 ? data : Data(data)
         guard data.count >= 12 else {
             throw ExtractorError.notAFlashExecutable
         }
@@ -34,6 +35,10 @@ public enum ExeSwfExtractor {
         // 1. Direct SWF file check at offset 0
         if let direct = validateSwfCandidate(data, verifyFullDecompression: true) {
             return direct
+        }
+
+        guard data.count >= 16 else {
+            throw ExtractorError.notAFlashExecutable
         }
 
         // 2. Fast-path: check last 8 bytes for 0xFA123456 footer
