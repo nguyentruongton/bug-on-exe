@@ -1,5 +1,6 @@
 import Foundation
 import CoreServices
+import UniformTypeIdentifiers
 import AppKit
 
 public enum DefaultAppManager {
@@ -11,11 +12,7 @@ public enum DefaultAppManager {
             "public.executable",
             "com.stark.bugonmacexe.exe"
         ]
-        if let preferred = UTTypeCreatePreferredIdentifierForTag(
-            kUTTagClassFilenameExtension,
-            "exe" as CFString,
-            nil
-        )?.takeRetainedValue() as String? {
+        if let preferred = UTType(filenameExtension: "exe")?.identifier {
             if !list.contains(preferred) {
                 list.insert(preferred, at: 0)
             }
