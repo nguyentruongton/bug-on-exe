@@ -1,4 +1,5 @@
 import Foundation
+import Darwin
 
 public struct PreparedSession {
     public let sessionDirectory: URL
@@ -9,13 +10,29 @@ public struct PreparedSession {
 public final class SessionManager {
     public let cacheRootURL: URL
     public let trustConfigURL: URL
+    private let mirrorTrustConfigURL: URL?
+
+    public static func realUserHomeDirectory() -> URL {
+        if let pw = getpwuid(getuid()), let dir = pw.pointee.pw_dir {
+            return URL(fileURLWithPath: String(cString: dir), isDirectory: true)
+        }
+        return FileManager.default.homeDirectoryForCurrentUser
+    }
 
     public init(cacheRootURL: URL? = nil, trustConfigURL: URL? = nil) {
-        let home = FileManager.default.homeDirectoryForCurrentUser
-        self.cacheRootURL = cacheRootURL ?? home
-            .appendingPathComponent("Library/Caches/BugOnMacExe/Sessions", isDirectory: true)
-        self.trustConfigURL = trustConfigURL ?? home
-            .appendingPathComponent("Library/Preferences/Macromedia/Flash Player/#Security/FlashPlayerTrust/BugOnMacExe.cfg", isDirectory: false)
+        let realHome = Self.realUserHomeDirectory()
+        let envHome = FileManager.default.homeDirectoryForCurrentUser
+        let defaultCache = realHome.appendingPathComponent("Library/Caches/BugOnMacExe/Sessions", isDirectory: true)
+        let defaultTrust = realHome.appendingPathComponent("Library/Preferences/Macromedia/Flash Player/#Security/FlashPlayerTrust/BugOnMacExe.cfg", isDirectory: false)
+
+        self.cacheRootURL = cacheRootURL ?? defaultCache
+        self.trustConfigURL = trustConfigURL ?? defaultTrust
+
+        if trustConfigURL == nil && envHome.standardizedFileURL.path != realHome.standardizedFileURL.path {
+            self.mirrorTrustConfigURL = envHome.appendingPathComponent("Library/Preferences/Macromedia/Flash Player/#Security/FlashPlayerTrust/BugOnMacExe.cfg", isDirectory: false)
+        } else {
+            self.mirrorTrustConfigURL = nil
+        }
     }
 
     public func prepareSession(for sourceExeURL: URL, payload: SwfPayload) throws -> PreparedSession {
@@ -44,11 +61,15 @@ public final class SessionManager {
             }
         }
 
-        try ensureTrustedPaths([
+        let trustedPaths = [
             cacheRootURL.path,
             sessionDir.path,
             parentDir.path
-        ])
+        ]
+        try Self.writeTrustFile(at: trustConfigURL, paths: trustedPaths)
+        if let mirror = mirrorTrustConfigURL {
+            try? Self.writeTrustFile(at: mirror, paths: trustedPaths)
+        }
 
         return PreparedSession(
             sessionDirectory: sessionDir,
@@ -57,13 +78,13 @@ public final class SessionManager {
         )
     }
 
-    private func ensureTrustedPaths(_ paths: [String]) throws {
+    private static func writeTrustFile(at fileURL: URL, paths: [String]) throws {
         let fm = FileManager.default
-        let trustDir = trustConfigURL.deletingLastPathComponent()
+        let trustDir = fileURL.deletingLastPathComponent()
         try fm.createDirectory(at: trustDir, withIntermediateDirectories: true)
 
         var existingLines: [String] = []
-        if let existing = try? String(contentsOf: trustConfigURL, encoding: .utf8) {
+        if let existing = try? String(contentsOf: fileURL, encoding: .utf8) {
             existingLines = existing
                 .components(separatedBy: .newlines)
                 .map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
@@ -76,9 +97,9 @@ public final class SessionManager {
             changed = true
         }
 
-        if changed || !fm.fileExists(atPath: trustConfigURL.path) {
+        if changed || !fm.fileExists(atPath: fileURL.path) {
             let output = existingLines.joined(separator: "\n") + "\n"
-            try output.write(to: trustConfigURL, atomically: true, encoding: .utf8)
+            try output.write(to: fileURL, atomically: true, encoding: .utf8)
         }
     }
 

@@ -157,7 +157,7 @@ public final class LauncherWindowController: NSWindowController, NSTableViewData
             }
         }
 
-        let ic3Root = FileManager.default.homeDirectoryForCurrentUser.appendingPathComponent("Documents/IC3")
+        let ic3Root = SessionManager.realUserHomeDirectory().appendingPathComponent("Documents/IC3")
         for file in DefaultAppManager.discoverExeFiles(in: ic3Root) {
             let p = file.standardizedFileURL.path
             if seen.insert(p).inserted {
