@@ -123,12 +123,15 @@ mkdir -p "$APP_BUNDLE/Contents/MacOS" "$APP_BUNDLE/Contents/Resources"
 
 cp "$PROJ_ROOT/Resources/Info.plist" "$APP_BUNDLE/Contents/Info.plist"
 cp "$DIST_DIR/AppIcon.icns" "$APP_BUNDLE/Contents/Resources/AppIcon.icns"
+cp -R "$PROJ_ROOT/Resources/en.lproj" "$APP_BUNDLE/Contents/Resources/en.lproj"
+cp -R "$PROJ_ROOT/Resources/vi.lproj" "$APP_BUNDLE/Contents/Resources/vi.lproj"
 cp -R "$VENDOR_DIR/Flash Player.app" "$APP_BUNDLE/Contents/Resources/Flash Player.app"
 
 echo "==> Compiling BugOnMacExe binary (x86_64)..."
 swiftc \
   -O \
   -target x86_64-apple-macosx13.0 \
+  "$PROJ_ROOT/Sources/Core/LocalizationManager.swift" \
   "$PROJ_ROOT/Sources/Core/ExeSwfExtractor.swift" \
   "$PROJ_ROOT/Sources/Core/SessionManager.swift" \
   "$PROJ_ROOT/Sources/Core/DefaultAppManager.swift" \

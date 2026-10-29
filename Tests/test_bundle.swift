@@ -12,6 +12,14 @@ struct BundleVerificationTest {
         let plist = try PropertyListSerialization.propertyList(from: plistData, options: [], format: nil) as? [String: Any]
         assert(plist?["CFBundleIdentifier"] as? String == "com.stark.bugonmacexe")
         assert(plist?["CFBundleDisplayName"] as? String == "Bug On Mac exe")
+        assert(plist?["CFBundleDevelopmentRegion"] as? String == "en", "Default development region must be English (en)")
+        let localizations = plist?["CFBundleLocalizations"] as? [String] ?? []
+        assert(localizations.contains("en") && localizations.contains("vi"), "Bundle must declare en and vi localizations")
+
+        let enStrings = appURL.appendingPathComponent("Contents/Resources/en.lproj/Localizable.strings")
+        let viStrings = appURL.appendingPathComponent("Contents/Resources/vi.lproj/Localizable.strings")
+        assert(fm.fileExists(atPath: enStrings.path), "en.lproj/Localizable.strings must be bundled")
+        assert(fm.fileExists(atPath: viStrings.path), "vi.lproj/Localizable.strings must be bundled")
 
         let execURL = appURL.appendingPathComponent("Contents/MacOS/BugOnMacExe")
         assert(fm.isExecutableFile(atPath: execURL.path), "Main executable must exist and be executable")
