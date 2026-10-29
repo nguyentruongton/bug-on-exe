@@ -59,6 +59,15 @@ public enum CardGridFormatters {
             return (pinned: [], recents: recents)
         }
     }
+
+    public static func shouldShowEmptySearchState(
+        query: String,
+        pinned: [ExeItem],
+        recents: [ExeItem]
+    ) -> Bool {
+        let trimmed = query.trimmingCharacters(in: .whitespacesAndNewlines)
+        return !trimmed.isEmpty && pinned.isEmpty && recents.isEmpty
+    }
 }
 
 public struct LauncherCardGridView: View {
@@ -226,8 +235,17 @@ public struct LauncherCardGridView: View {
                         }
                     }
 
-                    if selectedFilter == .pinned && slices.pinned.isEmpty {
-                        Text(l10n.string(searchText.isEmpty ? .emptyStatePinned : .emptyStateSearch))
+                    if CardGridFormatters.shouldShowEmptySearchState(
+                        query: searchText,
+                        pinned: slices.pinned,
+                        recents: slices.recents
+                    ) {
+                        Text(l10n.string(.emptyStateSearch))
+                            .font(.system(size: 13))
+                            .foregroundStyle(.secondary)
+                            .frame(maxWidth: .infinity, minHeight: 160, alignment: .center)
+                    } else if selectedFilter == .pinned && slices.pinned.isEmpty {
+                        Text(l10n.string(.emptyStatePinned))
                             .font(.system(size: 13))
                             .foregroundStyle(.secondary)
                             .frame(maxWidth: .infinity, minHeight: 200, alignment: .center)

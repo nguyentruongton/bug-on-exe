@@ -61,8 +61,11 @@ public final class LauncherWindowController: NSWindowController, NSTableViewData
     private var languageCancellable: AnyCancellable?
     private let useLiquidGlass: Bool
 
-    public init() {
-        let currentMajor = ProcessInfo.processInfo.operatingSystemVersion.majorVersion
+    public var currentFallbackSubtitle: String { subtitleLabel.stringValue }
+    public var currentFallbackOpenButtonTitle: String { openButton.title }
+
+    public init(majorVersion: Int? = nil) {
+        let currentMajor = majorVersion ?? ProcessInfo.processInfo.operatingSystemVersion.majorVersion
         self.useLiquidGlass = Self.shouldUseLiquidGlass(majorVersion: currentMajor)
 
         let window = NSWindow(

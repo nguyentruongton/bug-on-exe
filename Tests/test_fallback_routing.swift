@@ -21,13 +21,16 @@ struct FallbackRoutingTestRunner {
         ExeLibraryStore.shared.addOrUpdate(url: dummyExe)
         assert(ExeLibraryStore.shared.items.count == initialCount + 1, "Store should record newly opened exe file")
 
-        // 3. Test window localization and live language switching
+        // 3. Test window localization and live language switching in fallback mode
         LocalizationManager.shared.language = .english
-        let controller = LauncherWindowController()
+        let controller = LauncherWindowController(majorVersion: 15)
         assert(controller.window?.title == "Bug On Mac exe")
+        assert(controller.currentFallbackSubtitle.contains("Double-click any .exe file in Finder"))
+        assert(controller.currentFallbackOpenButtonTitle == "Open Another .exe File...")
         LocalizationManager.shared.language = .vietnamese
         controller.applyLocalization()
-        assert(controller.window?.title == "Bug On Mac exe")
+        assert(controller.currentFallbackSubtitle.contains("Double-click trực tiếp vào file .exe"))
+        assert(controller.currentFallbackOpenButtonTitle == "Mở file .exe khác...")
         LocalizationManager.shared.language = .english
 
         print("All Fallback routing tests passed successfully!")

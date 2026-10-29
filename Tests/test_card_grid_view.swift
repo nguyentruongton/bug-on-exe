@@ -25,6 +25,11 @@ struct CardGridViewTestRunner {
         let recentsSlice = CardGridFormatters.visibleItems(allItems: all, filter: .recents, query: "gs6")
         assert(recentsSlice.pinned.isEmpty && recentsSlice.recents.count == 1 && recentsSlice.recents[0].name == "GS6_LV3_TRAINING_02.exe")
 
+        let noMatchSlice = CardGridFormatters.visibleItems(allItems: all, filter: .all, query: "no_such_file")
+        assert(CardGridFormatters.shouldShowEmptySearchState(query: "no_such_file", pinned: noMatchSlice.pinned, recents: noMatchSlice.recents) == true)
+        assert(CardGridFormatters.shouldShowEmptySearchState(query: "", pinned: [], recents: []) == false)
+        assert(CardGridFormatters.shouldShowEmptySearchState(query: "gs6", pinned: allSlice.pinned, recents: allSlice.recents) == false)
+
         // 3. Test Relative Time Formatter in English (default) and Vietnamese
         let now = Date()
         assert(CardGridFormatters.relativeTimeString(from: now, relativeTo: now, language: .english) == "Just now")
