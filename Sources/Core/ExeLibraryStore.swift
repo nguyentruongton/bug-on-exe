@@ -36,14 +36,19 @@ public final class ExeLibraryStore: ObservableObject {
     @Published public private(set) var items: [ExeItem] = []
 
     private let storageURL: URL
-    private let queue = DispatchQueue(label: "com.stark.bugonmacexe.librarystore", qos: .utility)
+
+    public static func isValidExecutable(url: URL) -> Bool {
+        let ext = url.pathExtension.lowercased()
+        return ext == "exe" || ext == "swf"
+    }
 
     public var pinnedItems: [ExeItem] {
         return items.filter { $0.isPinned }.sorted { $0.lastOpened > $1.lastOpened }
     }
 
     public var recentItems: [ExeItem] {
-        return items.filter { !$0.isPinned }.sorted { $0.lastOpened > $1.lastOpened }
+        let unpinned = items.filter { !$0.isPinned }.sorted { $0.lastOpened > $1.lastOpened }
+        return Array(unpinned.prefix(20))
     }
 
     public init(storageURL: URL? = nil) {
@@ -74,7 +79,19 @@ public final class ExeLibraryStore: ObservableObject {
     }
 
     public func addOrUpdate(url: URL, isPinned: Bool? = nil) {
+        if Thread.isMainThread {
+            _addOrUpdate(url: url, isPinned: isPinned)
+        } else {
+            DispatchQueue.main.sync {
+                self._addOrUpdate(url: url, isPinned: isPinned)
+            }
+        }
+    }
+
+    private func _addOrUpdate(url: URL, isPinned: Bool? = nil) {
         let standardizedURL = url.standardizedFileURL
+        guard Self.isValidExecutable(url: standardizedURL) else { return }
+
         let fileName = standardizedURL.lastPathComponent
         let fileSize = formatFileSize(url: standardizedURL)
 
@@ -101,22 +118,38 @@ public final class ExeLibraryStore: ObservableObject {
     }
 
     public func togglePin(id: UUID) {
+        if !Thread.isMainThread {
+            DispatchQueue.main.sync { self.togglePin(id: id) }
+            return
+        }
         guard let index = items.firstIndex(where: { $0.id == id }) else { return }
         items[index].isPinned.toggle()
         saveItems()
     }
 
     public func remove(id: UUID) {
+        if !Thread.isMainThread {
+            DispatchQueue.main.sync { self.remove(id: id) }
+            return
+        }
         items.removeAll(where: { $0.id == id })
         saveItems()
     }
 
     public func clearRecents() {
+        if !Thread.isMainThread {
+            DispatchQueue.main.sync { self.clearRecents() }
+            return
+        }
         items.removeAll(where: { !$0.isPinned })
         saveItems()
     }
 
     public func cleanMissingFiles() {
+        if !Thread.isMainThread {
+            DispatchQueue.main.sync { self.cleanMissingFiles() }
+            return
+        }
         items.removeAll(where: { !$0.existsOnDisk })
         saveItems()
     }

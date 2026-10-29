@@ -61,6 +61,20 @@ struct LibraryStoreTestRunner {
         reloadedStore.cleanMissingFiles()
         assert(reloadedStore.items.isEmpty, "cleanMissingFiles should remove missing entries")
 
+        // 9. Validation of file extensions
+        assert(ExeLibraryStore.isValidExecutable(url: URL(fileURLWithPath: "/test/app.exe")) == true)
+        assert(ExeLibraryStore.isValidExecutable(url: URL(fileURLWithPath: "/test/game.SWF")) == true)
+        assert(ExeLibraryStore.isValidExecutable(url: URL(fileURLWithPath: "/test/doc.pdf")) == false)
+        assert(ExeLibraryStore.isValidExecutable(url: URL(fileURLWithPath: "/test/image.png")) == false)
+
+        // 10. Max 20-file cap on recentItems
+        for i in 1...25 {
+            let f = tempDir.appendingPathComponent("file_\(i).exe")
+            try Data([0x4D]).write(to: f)
+            reloadedStore.addOrUpdate(url: f)
+        }
+        assert(reloadedStore.recentItems.count == 20, "recentItems must be capped at 20 items, got \(reloadedStore.recentItems.count)")
+
         print("All ExeLibraryStore tests passed successfully!")
     }
 }

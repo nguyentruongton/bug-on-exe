@@ -25,7 +25,16 @@ public final class DropContainerView: NSView {
               !items.isEmpty else {
             return false
         }
-        onFilesDropped?(items)
+        let validItems = items.filter { ExeLibraryStore.isValidExecutable(url: $0) }
+        guard !validItems.isEmpty else {
+            let alert = NSAlert()
+            alert.messageText = "Định dạng không được hỗ trợ"
+            alert.informativeText = "Chỉ chấp nhận các tập tin có đuôi .exe hoặc .swf."
+            alert.alertStyle = .warning
+            alert.runModal()
+            return false
+        }
+        onFilesDropped?(validItems)
         return true
     }
 }
@@ -57,6 +66,9 @@ public final class LauncherWindowController: NSWindowController, NSTableViewData
 
         if useLiquidGlass {
             window.titlebarAppearsTransparent = true
+            window.titleVisibility = .hidden
+            window.isOpaque = false
+            window.backgroundColor = .clear
             window.title = "Bug On Mac exe — Trình quản lý tập tin"
             setupLiquidGlassUI()
         } else {

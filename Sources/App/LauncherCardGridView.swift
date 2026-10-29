@@ -33,7 +33,8 @@ public struct LauncherCardGridView: View {
     @ObservedObject private var store = ExeLibraryStore.shared
     @State private var searchText = ""
     @State private var isDefault = DefaultAppManager.isDefaultHandlerForExe()
-    @State private var isDropTargeted = false
+    @State private var isWindowDropTargeted = false
+    @State private var isDropzoneTargeted = false
 
     private let onOpenFilePicker: () -> Void
     private let onRunFile: (URL) -> Void
@@ -63,10 +64,22 @@ public struct LauncherCardGridView: View {
                 Divider().opacity(0.2)
                 bottomStatusBar
             }
+
+            // Window Drop Overlay Highlight
+            if isWindowDropTargeted {
+                RoundedRectangle(cornerRadius: 16)
+                    .strokeBorder(Color.accentColor, lineWidth: 3)
+                    .background(Color.accentColor.opacity(0.08))
+                    .ignoresSafeArea()
+            }
         }
         .frame(minWidth: 720, minHeight: 480)
         .onAppear {
             isDefault = DefaultAppManager.isDefaultHandlerForExe()
+        }
+        .onDrop(of: [.fileURL], isTargeted: $isWindowDropTargeted) { providers in
+            handleDroppedFiles(providers)
+            return true
         }
     }
 
@@ -142,7 +155,8 @@ public struct LauncherCardGridView: View {
             .buttonStyle(.borderedProminent)
             .controlSize(.regular)
         }
-        .padding(.horizontal, 16)
+        .padding(.leading, 78) // Clear window traffic lights
+        .padding(.trailing, 16)
         .padding(.vertical, 10)
         .background(.ultraThinMaterial)
     }
@@ -292,6 +306,7 @@ public struct LauncherCardGridView: View {
             }
         }
         .padding(12)
+        .opacity(item.existsOnDisk ? 1.0 : 0.55) // Dim missing files
         .background(
             RoundedRectangle(cornerRadius: 14)
                 .fill(.ultraThinMaterial)
@@ -361,19 +376,19 @@ public struct LauncherCardGridView: View {
         .background(
             RoundedRectangle(cornerRadius: 14)
                 .strokeBorder(
-                    isDropTargeted ? Color.accentColor : Color.secondary.opacity(0.35),
+                    isDropzoneTargeted ? Color.accentColor : Color.secondary.opacity(0.35),
                     style: StrokeStyle(lineWidth: 1.5, dash: [5, 4])
                 )
                 .background(
                     RoundedRectangle(cornerRadius: 14)
-                        .fill(isDropTargeted ? Color.accentColor.opacity(0.1) : Color.clear)
+                        .fill(isDropzoneTargeted ? Color.accentColor.opacity(0.1) : Color.clear)
                 )
         )
         .contentShape(Rectangle())
         .onTapGesture {
             onOpenFilePicker()
         }
-        .onDrop(of: [.fileURL], isTargeted: $isDropTargeted) { providers in
+        .onDrop(of: [.fileURL], isTargeted: $isDropzoneTargeted) { providers in
             handleDroppedFiles(providers)
             return true
         }
@@ -401,8 +416,15 @@ public struct LauncherCardGridView: View {
             _ = provider.loadObject(ofClass: URL.self) { url, _ in
                 guard let fileURL = url else { return }
                 DispatchQueue.main.async {
-                    store.addOrUpdate(url: fileURL)
-                    onRunFile(fileURL)
+                    if ExeLibraryStore.isValidExecutable(url: fileURL) {
+                        onRunFile(fileURL)
+                    } else {
+                        let alert = NSAlert()
+                        alert.messageText = "Định dạng không được hỗ trợ"
+                        alert.informativeText = "File '\(fileURL.lastPathComponent)' không phải là file thực thi .exe hoặc .swf."
+                        alert.alertStyle = .warning
+                        alert.runModal()
+                    }
                 }
             }
         }
