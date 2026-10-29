@@ -1,5 +1,6 @@
 import Foundation
 import AppKit
+import SwiftUI
 import UniformTypeIdentifiers
 
 public final class DropContainerView: NSView {
@@ -30,24 +31,40 @@ public final class DropContainerView: NSView {
 }
 
 public final class LauncherWindowController: NSWindowController, NSTableViewDataSource, NSTableViewDelegate {
+    public static func shouldUseLiquidGlass(majorVersion: Int) -> Bool {
+        return majorVersion >= 26
+    }
+
     private let statusLabel = NSTextField(labelWithString: "")
     private let defaultAppButton = NSButton(title: "Đặt làm ứng dụng mặc định mở file .exe", target: nil, action: nil)
     private let tableView = NSTableView()
     private var fileItems: [URL] = []
 
     public init() {
+        let currentMajor = ProcessInfo.processInfo.operatingSystemVersion.majorVersion
+        let useLiquidGlass = Self.shouldUseLiquidGlass(majorVersion: currentMajor)
+
         let window = NSWindow(
-            contentRect: NSRect(x: 0, y: 0, width: 680, height: 480),
-            styleMask: [.titled, .closable, .miniaturizable, .resizable],
+            contentRect: NSRect(x: 0, y: 0, width: 760, height: 520),
+            styleMask: useLiquidGlass
+                ? [.titled, .closable, .miniaturizable, .resizable, .fullSizeContentView]
+                : [.titled, .closable, .miniaturizable, .resizable],
             backing: .buffered,
             defer: false
         )
-        window.title = "Bug On Mac exe — Trình chạy Adobe Flash .exe"
         window.center()
         super.init(window: window)
-        setupUI()
-        reloadFiles()
-        refreshDefaultStatus()
+
+        if useLiquidGlass {
+            window.titlebarAppearsTransparent = true
+            window.title = "Bug On Mac exe — Trình quản lý tập tin"
+            setupLiquidGlassUI()
+        } else {
+            window.title = "Bug On Mac exe — Trình chạy Adobe Flash .exe"
+            setupFallbackUI()
+            reloadFiles()
+            refreshDefaultStatus()
+        }
     }
 
     @available(*, unavailable)
@@ -55,7 +72,22 @@ public final class LauncherWindowController: NSWindowController, NSTableViewData
         fatalError("init(coder:) has not been implemented")
     }
 
-    private func setupUI() {
+    // MARK: - Liquid Glass UI (macOS >= 26)
+    private func setupLiquidGlassUI() {
+        let gridView = LauncherCardGridView(
+            onOpenFilePicker: { [weak self] in
+                self?.handleOpenPanel()
+            },
+            onRunFile: { [weak self] url in
+                self?.openAndRun(url: url)
+            }
+        )
+        let hostingController = NSHostingController(rootView: gridView)
+        self.contentViewController = hostingController
+    }
+
+    // MARK: - Fallback UI (macOS < 26)
+    private func setupFallbackUI() {
         guard let window = self.window else { return }
         let rootView = DropContainerView(frame: window.contentView?.bounds ?? .zero)
         rootView.autoresizingMask = [.width, .height]
@@ -150,18 +182,17 @@ public final class LauncherWindowController: NSWindowController, NSTableViewData
         var combined: [URL] = []
         var seen = Set<String>()
 
+        for item in ExeLibraryStore.shared.items {
+            let p = item.path.standardizedFileURL.path
+            if seen.insert(p).inserted {
+                combined.append(item.path)
+            }
+        }
+
         for recent in ProjectorRunner.recentFiles() {
             let p = recent.standardizedFileURL.path
             if seen.insert(p).inserted {
                 combined.append(recent)
-            }
-        }
-
-        let ic3Root = SessionManager.realUserHomeDirectory().appendingPathComponent("Documents/IC3")
-        for file in DefaultAppManager.discoverExeFiles(in: ic3Root) {
-            let p = file.standardizedFileURL.path
-            if seen.insert(p).inserted {
-                combined.append(file)
             }
         }
 
@@ -208,7 +239,7 @@ public final class LauncherWindowController: NSWindowController, NSTableViewData
         openAndRun(url: fileItems[row])
     }
 
-    @objc private func handleOpenPanel() {
+    @objc public func handleOpenPanel() {
         let panel = NSOpenPanel()
         panel.title = "Chọn file Adobe Flash .exe hoặc .swf"
         panel.canChooseFiles = true
@@ -226,6 +257,7 @@ public final class LauncherWindowController: NSWindowController, NSTableViewData
     }
 
     public func openAndRun(url: URL) {
+        ExeLibraryStore.shared.addOrUpdate(url: url)
         ProjectorRunner.run(fileURL: url) { [weak self] result in
             self?.reloadFiles()
             if case .failure(let error) = result {
