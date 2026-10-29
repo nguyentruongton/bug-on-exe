@@ -63,6 +63,8 @@ public enum CardGridFormatters {
 
 public struct LauncherCardGridView: View {
     @ObservedObject private var store = ExeLibraryStore.shared
+    @ObservedObject private var l10n = LocalizationManager.shared
+    @State private var selectedFilter: SidebarFilter = .all
     @State private var searchText = ""
     @State private var isDefault = DefaultAppManager.isDefaultHandlerForExe()
     @State private var isWindowDropTargeted = false
@@ -72,7 +74,7 @@ public struct LauncherCardGridView: View {
     private let onRunFile: (URL) -> Void
 
     private let columns = [
-        GridItem(.adaptive(minimum: 210, maximum: 260), spacing: 14)
+        GridItem(.adaptive(minimum: 215, maximum: 270), spacing: 16)
     ]
 
     public init(
@@ -84,26 +86,14 @@ public struct LauncherCardGridView: View {
     }
 
     public var body: some View {
-        ZStack {
-            // Liquid Glass Background
-            VisualEffectBackground()
-                .ignoresSafeArea()
-
-            VStack(spacing: 0) {
-                topToolbar
-                Divider().opacity(0.2)
-                mainContent
-            }
-
-            // Window Drop Overlay Highlight
-            if isWindowDropTargeted {
-                RoundedRectangle(cornerRadius: 16)
-                    .strokeBorder(Color.accentColor, lineWidth: 3)
-                    .background(Color.accentColor.opacity(0.08))
-                    .ignoresSafeArea()
+        Group {
+            if #available(macOS 26.0, *) {
+                liquidGlassSplitView
+            } else {
+                legacyGridLayout
             }
         }
-        .frame(minWidth: 720, minHeight: 480)
+        .frame(minWidth: 780, minHeight: 500)
         .onAppear {
             isDefault = DefaultAppManager.isDefaultHandlerForExe()
         }
@@ -111,215 +101,238 @@ public struct LauncherCardGridView: View {
             handleDroppedFiles(providers)
             return true
         }
+        .overlay {
+            if isWindowDropTargeted {
+                RoundedRectangle(cornerRadius: 16)
+                    .strokeBorder(Color.accentColor, lineWidth: 3)
+                    .background(Color.accentColor.opacity(0.08))
+                    .ignoresSafeArea()
+            }
+        }
     }
 
-    // MARK: - Top Toolbar
-    private var topToolbar: some View {
-        HStack(spacing: 12) {
-            // Default App Status Pill
-            HStack(spacing: 6) {
-                Circle()
-                    .fill(isDefault ? Color.green : Color.orange)
-                    .frame(width: 8, height: 8)
-                Text(isDefault ? "Đã là ứng dụng mặc định .exe" : "Chưa đặt mặc định")
-                    .font(.system(size: 11, weight: .medium))
-                    .foregroundColor(.primary)
+    // MARK: - macOS 26+ Native System App Layout (Liquid Glass)
+    @available(macOS 26.0, *)
+    private var liquidGlassSplitView: some View {
+        NavigationSplitView {
+            List(selection: $selectedFilter) {
+                Section(l10n.string(.sidebarSectionLibrary)) {
+                    NavigationLink(value: SidebarFilter.all) {
+                        Label(l10n.string(.sidebarItemAll), systemImage: "square.grid.2x2")
+                    }
+                    .badge(store.items.count)
+
+                    NavigationLink(value: SidebarFilter.pinned) {
+                        Label(l10n.string(.sidebarItemPinned), systemImage: "pin.fill")
+                    }
+                    .badge(store.pinnedItems.count)
+
+                    NavigationLink(value: SidebarFilter.recents) {
+                        Label(l10n.string(.sidebarItemRecents), systemImage: "clock.arrow.circlepath")
+                    }
+                    .badge(store.recentItems.count)
+                }
+            }
+            .listStyle(.sidebar)
+            .navigationSplitViewColumnWidth(min: 190, ideal: 215, max: 250)
+            .safeAreaInset(edge: .bottom) {
+                liquidGlassDefaultStatusFooter
+            }
+        } detail: {
+            liquidGlassDetailContent
+                .navigationTitle(sidebarTitle(for: selectedFilter))
+                .searchable(
+                    text: $searchText,
+                    placement: .toolbar,
+                    prompt: Text(l10n.string(.toolbarSearchPlaceholder))
+                )
+                .toolbar {
+                    ToolbarItemGroup(placement: .primaryAction) {
+                        languageMenu
+
+                        if !store.recentItems.isEmpty && selectedFilter != .pinned {
+                            Button(action: { store.clearRecents() }) {
+                                Label(l10n.string(.toolbarClearRecents), systemImage: "trash")
+                            }
+                            .buttonStyle(.glass)
+                            .help(l10n.string(.toolbarClearRecents))
+                        }
+
+                        Button(action: onOpenFilePicker) {
+                            Label(l10n.string(.toolbarAddFile), systemImage: "plus")
+                        }
+                        .buttonStyle(.glassProminent)
+                    }
+                }
+        }
+    }
+
+    @available(macOS 26.0, *)
+    private var liquidGlassDefaultStatusFooter: some View {
+        GlassEffectContainer(spacing: 8) {
+            VStack(alignment: .leading, spacing: 8) {
+                HStack(spacing: 8) {
+                    Circle()
+                        .fill(isDefault ? Color.green : Color.orange)
+                        .frame(width: 8, height: 8)
+                    Text(l10n.string(isDefault ? .statusDefaultActive : .statusDefaultInactive))
+                        .font(.system(size: 11, weight: .medium))
+                        .foregroundStyle(.primary)
+                        .lineLimit(1)
+                    Spacer(minLength: 0)
+                }
 
                 if !isDefault {
-                    Button("Đặt mặc định") {
+                    Button(action: {
                         _ = DefaultAppManager.setAsDefaultHandlerForExe()
                         isDefault = DefaultAppManager.isDefaultHandlerForExe()
+                    }) {
+                        Text(l10n.string(.statusDefaultSetButton))
+                            .font(.system(size: 11, weight: .semibold))
+                            .frame(maxWidth: .infinity)
                     }
-                    .font(.system(size: 10, weight: .semibold))
-                    .buttonStyle(.borderedProminent)
-                    .controlSize(.mini)
+                    .buttonStyle(.glassProminent)
+                    .controlSize(.small)
                 }
             }
-            .padding(.horizontal, 10)
-            .padding(.vertical, 5)
-            .background(
-                Capsule()
-                    .fill(.ultraThinMaterial)
-                    .overlay(
-                        Capsule()
-                            .strokeBorder(Color.white.opacity(0.2), lineWidth: 1)
-                    )
-            )
-
-            Spacer()
-
-            // Search Field
-            HStack(spacing: 6) {
-                Image(systemName: "magnifyingglass")
-                    .foregroundColor(.secondary)
-                    .font(.system(size: 12))
-                TextField("Tìm kiếm file .exe...", text: $searchText)
-                    .textFieldStyle(.plain)
-                    .font(.system(size: 12))
-                if !searchText.isEmpty {
-                    Button(action: { searchText = "" }) {
-                        Image(systemName: "xmark.circle.fill")
-                            .foregroundColor(.secondary)
-                            .font(.system(size: 11))
-                    }
-                    .buttonStyle(.plain)
-                }
-            }
-            .padding(.horizontal, 8)
-            .padding(.vertical, 5)
-            .frame(width: 240)
-            .background(
-                RoundedRectangle(cornerRadius: 8)
-                    .fill(.ultraThinMaterial)
-                    .overlay(
-                        RoundedRectangle(cornerRadius: 8)
-                            .strokeBorder(Color.white.opacity(0.18), lineWidth: 1)
-                    )
-            )
-
-            // Add File Button
-            Button(action: onOpenFilePicker) {
-                Label("Thêm file .exe...", systemImage: "plus")
-                    .font(.system(size: 12, weight: .medium))
-            }
-            .buttonStyle(.borderedProminent)
-            .controlSize(.regular)
+            .padding(10)
+            .glassEffect(.regular, in: .rect(cornerRadius: 12))
         }
-        .padding(.leading, 78) // Clear window traffic lights
-        .padding(.trailing, 16)
-        .padding(.vertical, 10)
-        .background(.ultraThinMaterial)
+        .padding(10)
     }
 
-    // MARK: - Main Content Area
-    private var mainContent: some View {
-        ScrollView {
-            VStack(alignment: .leading, spacing: 20) {
-                let filteredPinned = CardGridFormatters.filterItems(store.pinnedItems, query: searchText)
-                let filteredRecents = CardGridFormatters.filterItems(store.recentItems, query: searchText)
+    @available(macOS 26.0, *)
+    private var liquidGlassDetailContent: some View {
+        let slices = CardGridFormatters.visibleItems(
+            allItems: store.items,
+            filter: selectedFilter,
+            query: searchText
+        )
 
-                // 1. Pinned Section
-                if !filteredPinned.isEmpty {
-                    VStack(alignment: .leading, spacing: 10) {
-                        HStack {
-                            Label("ĐÃ GHIM (PINNED)", systemImage: "star.fill")
+        return ScrollView {
+            GlassEffectContainer(spacing: 16) {
+                VStack(alignment: .leading, spacing: 24) {
+                    if selectedFilter != .recents && !slices.pinned.isEmpty {
+                        VStack(alignment: .leading, spacing: 12) {
+                            Label(l10n.string(.sectionPinned), systemImage: "pin.fill")
                                 .font(.system(size: 11, weight: .bold))
-                                .foregroundColor(.orange)
-                            Spacer()
-                        }
+                                .foregroundStyle(.orange)
 
-                        LazyVGrid(columns: columns, spacing: 14) {
-                            ForEach(filteredPinned) { item in
-                                cardView(item: item)
+                            LazyVGrid(columns: columns, spacing: 16) {
+                                ForEach(slices.pinned) { item in
+                                    liquidGlassCard(item: item)
+                                }
+                            }
+                        }
+                    }
+
+                    if selectedFilter == .pinned && slices.pinned.isEmpty {
+                        Text(l10n.string(searchText.isEmpty ? .emptyStatePinned : .emptyStateSearch))
+                            .font(.system(size: 13))
+                            .foregroundStyle(.secondary)
+                            .frame(maxWidth: .infinity, minHeight: 200, alignment: .center)
+                    }
+
+                    if selectedFilter != .pinned {
+                        VStack(alignment: .leading, spacing: 12) {
+                            Label(l10n.string(.sectionRecents), systemImage: "clock.arrow.circlepath")
+                                .font(.system(size: 11, weight: .bold))
+                                .foregroundStyle(.secondary)
+
+                            LazyVGrid(columns: columns, spacing: 16) {
+                                ForEach(slices.recents) { item in
+                                    liquidGlassCard(item: item)
+                                }
+
+                                liquidGlassDropzoneCard
                             }
                         }
                     }
                 }
-
-                // 2. Recents Section
-                VStack(alignment: .leading, spacing: 10) {
-                    HStack {
-                        Label("GẦN ĐÂY (RECENTS)", systemImage: "clock.arrow.circlepath")
-                            .font(.system(size: 11, weight: .bold))
-                            .foregroundColor(.secondary)
-                        Spacer()
-
-                        if !store.recentItems.isEmpty {
-                            Button("Dọn lịch sử") {
-                                store.clearRecents()
-                            }
-                            .font(.system(size: 10))
-                            .buttonStyle(.plain)
-                            .foregroundColor(.secondary)
-                        }
-                    }
-
-                    LazyVGrid(columns: columns, spacing: 14) {
-                        ForEach(filteredRecents) { item in
-                            cardView(item: item)
-                        }
-
-                        // Dropzone Add Card
-                        dropzoneCard
-                    }
-                }
+                .padding(20)
             }
-            .padding(16)
         }
     }
 
-    // MARK: - Single Card View
-    private func cardView(item: ExeItem) -> some View {
-        VStack(spacing: 10) {
+    @available(macOS 26.0, *)
+    private func liquidGlassCard(item: ExeItem) -> some View {
+        let extLabel = item.path.pathExtension.uppercased().isEmpty ? "EXE" : item.path.pathExtension.uppercased()
+
+        return VStack(spacing: 12) {
             HStack {
+                Text(extLabel)
+                    .font(.system(size: 9, weight: .bold, design: .rounded))
+                    .foregroundStyle(.secondary)
+                    .padding(.horizontal, 7)
+                    .padding(.vertical, 2)
+                    .glassEffect(.regular, in: .capsule)
+
                 Spacer()
+
                 Button(action: {
                     store.togglePin(id: item.id)
                 }) {
-                    Image(systemName: item.isPinned ? "star.fill" : "star")
-                        .foregroundColor(item.isPinned ? .orange : .secondary.opacity(0.6))
-                        .font(.system(size: 13))
+                    Image(systemName: item.isPinned ? "pin.fill" : "pin")
+                        .foregroundStyle(item.isPinned ? .orange : .secondary)
+                        .font(.system(size: 11, weight: .semibold))
                 }
-                .buttonStyle(.plain)
+                .buttonStyle(.glass)
+                .buttonBorderShape(.circle)
+                .controlSize(.small)
+                .help(l10n.string(item.isPinned ? .cardActionUnpin : .cardActionPin))
             }
 
-            // Icon Badge
+            // Icon Representation
             ZStack {
-                RoundedRectangle(cornerRadius: 12)
+                RoundedRectangle(cornerRadius: 14)
                     .fill(
                         LinearGradient(
                             colors: item.isPinned
-                                ? [Color.red.opacity(0.85), Color.orange.opacity(0.85)]
-                                : [Color.blue.opacity(0.8), Color.purple.opacity(0.7)],
+                                ? [Color.orange.opacity(0.85), Color.red.opacity(0.80)]
+                                : [Color.accentColor.opacity(0.85), Color.indigo.opacity(0.75)],
                             startPoint: .topLeading,
                             endPoint: .bottomTrailing
                         )
                     )
-                    .frame(width: 48, height: 48)
-                    .shadow(color: .black.opacity(0.2), radius: 4, x: 0, y: 2)
+                    .frame(width: 52, height: 52)
+                    .shadow(color: .black.opacity(0.18), radius: 6, x: 0, y: 3)
 
-                Text("FL")
-                    .font(.system(size: 18, weight: .heavy, design: .rounded))
-                    .foregroundColor(.white)
+                Image(systemName: "play.rectangle.fill")
+                    .font(.system(size: 22, weight: .semibold))
+                    .foregroundStyle(.white)
             }
 
-            VStack(spacing: 3) {
+            VStack(spacing: 4) {
                 Text(item.name)
-                    .font(.system(size: 12, weight: .semibold))
+                    .font(.system(size: 13, weight: .semibold))
                     .lineLimit(1)
                     .truncationMode(.middle)
-                    .foregroundColor(item.existsOnDisk ? .primary : .secondary)
+                    .foregroundStyle(item.existsOnDisk ? .primary : .secondary)
 
                 HStack(spacing: 4) {
                     Text(item.fileSizeFormatted)
                     Text("•")
-                    Text(CardGridFormatters.relativeTimeString(from: item.lastOpened))
+                    Text(CardGridFormatters.relativeTimeString(from: item.lastOpened, language: l10n.language))
                 }
-                .font(.system(size: 10))
-                .foregroundColor(.secondary)
+                .font(.system(size: 11))
+                .foregroundStyle(.secondary)
 
                 if !item.existsOnDisk {
-                    Text("Không tìm thấy file")
-                        .font(.system(size: 9, weight: .medium))
-                        .foregroundColor(.red)
+                    Text(l10n.string(.cardStatusMissing))
+                        .font(.system(size: 10, weight: .medium))
+                        .foregroundStyle(.red)
                 }
             }
 
-            // Action Buttons
-            HStack(spacing: 6) {
+            HStack(spacing: 8) {
                 Button(action: {
                     onRunFile(item.path)
                 }) {
-                    HStack(spacing: 4) {
-                        Image(systemName: "play.fill")
-                            .font(.system(size: 9))
-                        Text("Khởi chạy")
-                            .font(.system(size: 11, weight: .semibold))
-                    }
-                    .frame(maxWidth: .infinity)
-                    .padding(.vertical, 4)
+                    Label(l10n.string(.cardActionRun), systemImage: "play.fill")
+                        .font(.system(size: 11, weight: .semibold))
+                        .frame(maxWidth: .infinity)
                 }
-                .buttonStyle(.borderedProminent)
+                .buttonStyle(.glassProminent)
                 .controlSize(.small)
                 .disabled(!item.existsOnDisk)
 
@@ -328,90 +341,49 @@ public struct LauncherCardGridView: View {
                 }) {
                     Image(systemName: "folder")
                         .font(.system(size: 11))
-                        .padding(.vertical, 4)
-                        .padding(.horizontal, 6)
                 }
-                .buttonStyle(.bordered)
+                .buttonStyle(.glass)
                 .controlSize(.small)
+                .help(l10n.string(.cardActionRevealInFinder))
             }
         }
-        .padding(12)
-        .opacity(item.existsOnDisk ? 1.0 : 0.55) // Dim missing files
-        .background(
-            RoundedRectangle(cornerRadius: 14)
-                .fill(.ultraThinMaterial)
-                .overlay(
-                    RoundedRectangle(cornerRadius: 14)
-                        .strokeBorder(
-                            LinearGradient(
-                                colors: [Color.white.opacity(0.35), Color.white.opacity(0.08), Color.clear],
-                                startPoint: .topLeading,
-                                endPoint: .bottomTrailing
-                            ),
-                            lineWidth: 1
-                        )
-                )
-                .shadow(color: Color.black.opacity(0.08), radius: 5, x: 0, y: 2)
-        )
+        .padding(14)
+        .opacity(item.existsOnDisk ? 1.0 : 0.55)
+        .glassEffect(.regular, in: .rect(cornerRadius: 16))
         .onTapGesture(count: 2) {
             if item.existsOnDisk {
                 onRunFile(item.path)
             }
         }
         .contextMenu {
-            Button("Khởi chạy") {
-                if item.existsOnDisk { onRunFile(item.path) }
-            }
-            .disabled(!item.existsOnDisk)
-
-            Button("Hiện trong Finder") {
-                NSWorkspace.shared.activateFileViewerSelecting([item.path])
-            }
-
-            Button(item.isPinned ? "Bỏ ghim" : "Ghim lên đầu") {
-                store.togglePin(id: item.id)
-            }
-
-            Divider()
-
-            Button("Xóa khỏi danh sách", role: .destructive) {
-                store.remove(id: item.id)
-            }
+            cardContextMenu(item: item)
         }
     }
 
-    // MARK: - Dropzone Card
-    private var dropzoneCard: some View {
-        VStack(spacing: 8) {
-            ZStack {
-                Circle()
-                    .fill(.ultraThinMaterial)
-                    .frame(width: 40, height: 40)
-                Image(systemName: "plus")
-                    .font(.system(size: 16, weight: .bold))
-                    .foregroundColor(.accentColor)
-            }
+    @available(macOS 26.0, *)
+    private var liquidGlassDropzoneCard: some View {
+        VStack(spacing: 10) {
+            Image(systemName: "plus.circle.fill")
+                .font(.system(size: 28, weight: .semibold))
+                .foregroundStyle(Color.accentColor)
 
-            Text("Thêm file .exe")
-                .font(.system(size: 12, weight: .semibold))
-                .foregroundColor(.primary)
+            Text(l10n.string(.dropzoneTitle))
+                .font(.system(size: 13, weight: .semibold))
+                .foregroundStyle(.primary)
 
-            Text("Kéo thả file vào đây\nhoặc click để duyệt")
-                .font(.system(size: 10))
-                .foregroundColor(.secondary)
+            Text(l10n.string(.dropzoneSubtitle))
+                .font(.system(size: 11))
+                .foregroundStyle(.secondary)
                 .multilineTextAlignment(.center)
         }
-        .frame(maxWidth: .infinity, minHeight: 140)
-        .padding(12)
-        .background(
-            RoundedRectangle(cornerRadius: 14)
+        .frame(maxWidth: .infinity, minHeight: 165)
+        .padding(14)
+        .glassEffect(.regular, in: .rect(cornerRadius: 16))
+        .overlay(
+            RoundedRectangle(cornerRadius: 16)
                 .strokeBorder(
-                    isDropzoneTargeted ? Color.accentColor : Color.secondary.opacity(0.35),
-                    style: StrokeStyle(lineWidth: 1.5, dash: [5, 4])
-                )
-                .background(
-                    RoundedRectangle(cornerRadius: 14)
-                        .fill(isDropzoneTargeted ? Color.accentColor.opacity(0.1) : Color.clear)
+                    isDropzoneTargeted ? Color.accentColor : Color.secondary.opacity(0.3),
+                    style: StrokeStyle(lineWidth: isDropzoneTargeted ? 2 : 1, dash: [6, 4])
                 )
         )
         .contentShape(Rectangle())
@@ -424,6 +396,85 @@ public struct LauncherCardGridView: View {
         }
     }
 
+    // MARK: - Language Switcher Menu
+    private var languageMenu: some View {
+        Menu {
+            ForEach(AppLanguage.allCases) { lang in
+                Button(action: {
+                    l10n.language = lang
+                }) {
+                    HStack {
+                        Text(lang.displayName)
+                        if l10n.language == lang {
+                            Image(systemName: "checkmark")
+                        }
+                    }
+                }
+            }
+        } label: {
+            Label(l10n.language.shortCode, systemImage: "globe")
+        }
+        .help(l10n.string(.toolbarLanguage))
+    }
+
+    private func sidebarTitle(for filter: SidebarFilter) -> String {
+        switch filter {
+        case .all: return l10n.string(.sidebarItemAll)
+        case .pinned: return l10n.string(.sidebarItemPinned)
+        case .recents: return l10n.string(.sidebarItemRecents)
+        }
+    }
+
+    @ViewBuilder
+    private func cardContextMenu(item: ExeItem) -> some View {
+        Button(l10n.string(.cardActionRun)) {
+            if item.existsOnDisk { onRunFile(item.path) }
+        }
+        .disabled(!item.existsOnDisk)
+
+        Button(l10n.string(.cardActionRevealInFinder)) {
+            NSWorkspace.shared.activateFileViewerSelecting([item.path])
+        }
+
+        Button(l10n.string(item.isPinned ? .cardActionUnpin : .cardActionPin)) {
+            store.togglePin(id: item.id)
+        }
+
+        Divider()
+
+        Button(l10n.string(.cardActionRemove), role: .destructive) {
+            store.remove(id: item.id)
+        }
+    }
+
+    // MARK: - Legacy SwiftUI Layout (macOS < 26 compile-time fallback)
+    private var legacyGridLayout: some View {
+        VStack(spacing: 0) {
+            HStack(spacing: 12) {
+                Text(l10n.string(isDefault ? .statusDefaultActive : .statusDefaultInactive))
+                    .font(.system(size: 12, weight: .medium))
+                Spacer()
+                languageMenu
+                Button(l10n.string(.toolbarAddFile), action: onOpenFilePicker)
+                    .buttonStyle(.borderedProminent)
+            }
+            .padding(12)
+            Divider()
+            ScrollView {
+                LazyVGrid(columns: columns, spacing: 14) {
+                    ForEach(CardGridFormatters.filterItems(store.items, query: searchText)) { item in
+                        VStack(spacing: 8) {
+                            Text(item.name).font(.headline).lineLimit(1)
+                            Button(l10n.string(.cardActionRun)) { onRunFile(item.path) }
+                        }
+                        .padding(12)
+                    }
+                }
+                .padding(16)
+            }
+        }
+    }
+
     private func handleDroppedFiles(_ providers: [NSItemProvider]) {
         for provider in providers {
             _ = provider.loadObject(ofClass: URL.self) { url, _ in
@@ -433,8 +484,8 @@ public struct LauncherCardGridView: View {
                         onRunFile(fileURL)
                     } else {
                         let alert = NSAlert()
-                        alert.messageText = "Định dạng không được hỗ trợ"
-                        alert.informativeText = "File '\(fileURL.lastPathComponent)' không phải là file thực thi .exe hoặc .swf."
+                        alert.messageText = l10n.string(.alertUnsupportedTitle)
+                        alert.informativeText = l10n.string(.alertUnsupportedMessage)
                         alert.alertStyle = .warning
                         alert.runModal()
                     }
@@ -442,18 +493,4 @@ public struct LauncherCardGridView: View {
             }
         }
     }
-}
-
-// Helper wrapper for AppKit VisualEffect in SwiftUI
-public struct VisualEffectBackground: NSViewRepresentable {
-    public init() {}
-    public func makeNSView(context: Context) -> NSVisualEffectView {
-        let view = NSVisualEffectView()
-        view.blendingMode = .behindWindow
-        view.state = .active
-        view.material = .underWindowBackground
-        return view
-    }
-
-    public func updateNSView(_ nsView: NSVisualEffectView, context: Context) {}
 }

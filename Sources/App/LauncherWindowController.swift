@@ -1,6 +1,7 @@
 import Foundation
 import AppKit
 import SwiftUI
+import Combine
 import UniformTypeIdentifiers
 
 public final class DropContainerView: NSView {
@@ -27,9 +28,10 @@ public final class DropContainerView: NSView {
         }
         let validItems = items.filter { ExeLibraryStore.isValidExecutable(url: $0) }
         guard !validItems.isEmpty else {
+            let l10n = LocalizationManager.shared
             let alert = NSAlert()
-            alert.messageText = "Định dạng không được hỗ trợ"
-            alert.informativeText = "Chỉ chấp nhận các tập tin có đuôi .exe hoặc .swf."
+            alert.messageText = l10n.string(.alertUnsupportedTitle)
+            alert.informativeText = l10n.string(.alertUnsupportedMessage)
             alert.alertStyle = .warning
             alert.runModal()
             return false
@@ -44,17 +46,27 @@ public final class LauncherWindowController: NSWindowController, NSTableViewData
         return majorVersion >= 26
     }
 
+    private let titleLabel = NSTextField(labelWithString: "")
+    private let subtitleLabel = NSTextField(labelWithString: "")
     private let statusLabel = NSTextField(labelWithString: "")
-    private let defaultAppButton = NSButton(title: "Đặt làm ứng dụng mặc định mở file .exe", target: nil, action: nil)
+    private let defaultAppButton = NSButton(title: "", target: nil, action: nil)
+    private let openButton = NSButton(title: "", target: nil, action: nil)
+    private let runSelectedButton = NSButton(title: "", target: nil, action: nil)
+    private let refreshButton = NSButton(title: "", target: nil, action: nil)
+    private let languageButton = NSButton(title: "", target: nil, action: nil)
+    private let colName = NSTableColumn(identifier: NSUserInterfaceItemIdentifier("name"))
+    private let colPath = NSTableColumn(identifier: NSUserInterfaceItemIdentifier("path"))
     private let tableView = NSTableView()
     private var fileItems: [URL] = []
+    private var languageCancellable: AnyCancellable?
+    private let useLiquidGlass: Bool
 
     public init() {
         let currentMajor = ProcessInfo.processInfo.operatingSystemVersion.majorVersion
-        let useLiquidGlass = Self.shouldUseLiquidGlass(majorVersion: currentMajor)
+        self.useLiquidGlass = Self.shouldUseLiquidGlass(majorVersion: currentMajor)
 
         let window = NSWindow(
-            contentRect: NSRect(x: 0, y: 0, width: 760, height: 520),
+            contentRect: NSRect(x: 0, y: 0, width: 840, height: 540),
             styleMask: useLiquidGlass
                 ? [.titled, .closable, .miniaturizable, .resizable, .fullSizeContentView]
                 : [.titled, .closable, .miniaturizable, .resizable],
@@ -65,18 +77,19 @@ public final class LauncherWindowController: NSWindowController, NSTableViewData
         super.init(window: window)
 
         if useLiquidGlass {
-            window.titlebarAppearsTransparent = true
-            window.titleVisibility = .hidden
-            window.isOpaque = false
-            window.backgroundColor = .clear
-            window.title = "Bug On Mac exe — Trình quản lý tập tin"
+            window.toolbarStyle = .unified
             setupLiquidGlassUI()
         } else {
-            window.title = "Bug On Mac exe — Trình chạy Adobe Flash .exe"
             setupFallbackUI()
             reloadFiles()
-            refreshDefaultStatus()
         }
+
+        applyLocalization()
+        languageCancellable = LocalizationManager.shared.$language
+            .receive(on: RunLoop.main)
+            .sink { [weak self] _ in
+                self?.applyLocalization()
+            }
     }
 
     @available(*, unavailable)
@@ -110,10 +123,8 @@ public final class LauncherWindowController: NSWindowController, NSTableViewData
         }
         window.contentView = rootView
 
-        let titleLabel = NSTextField(labelWithString: "Bug On Mac exe")
         titleLabel.font = NSFont.boldSystemFont(ofSize: 20)
 
-        let subtitleLabel = NSTextField(labelWithString: "Double-click trực tiếp vào file .exe ngoài Finder hoặc kéo-thả / bấm đúp vào danh sách dưới đây để chạy bài thi Flash.")
         subtitleLabel.font = NSFont.systemFont(ofSize: 12.5)
         subtitleLabel.textColor = .secondaryLabelColor
         subtitleLabel.lineBreakMode = .byWordWrapping
@@ -128,13 +139,9 @@ public final class LauncherWindowController: NSWindowController, NSTableViewData
         statusStack.spacing = 12
         statusStack.alignment = .centerY
 
-        let colName = NSTableColumn(identifier: NSUserInterfaceItemIdentifier("name"))
-        colName.title = "Tên file (.exe / .swf)"
         colName.width = 300
         tableView.addTableColumn(colName)
 
-        let colPath = NSTableColumn(identifier: NSUserInterfaceItemIdentifier("path"))
-        colPath.title = "Thư mục"
         colPath.width = 320
         tableView.addTableColumn(colPath)
 
@@ -149,17 +156,24 @@ public final class LauncherWindowController: NSWindowController, NSTableViewData
         scrollView.hasVerticalScroller = true
         scrollView.borderType = .bezelBorder
 
-        let openButton = NSButton(title: "Mở file .exe khác...", target: self, action: #selector(handleOpenPanel))
+        openButton.target = self
+        openButton.action = #selector(handleOpenPanel)
         openButton.bezelStyle = .rounded
 
-        let runSelectedButton = NSButton(title: "Chạy bài đã chọn", target: self, action: #selector(handleRunSelected))
+        runSelectedButton.target = self
+        runSelectedButton.action = #selector(handleRunSelected)
         runSelectedButton.bezelStyle = .rounded
         runSelectedButton.keyEquivalent = "\r"
 
-        let refreshButton = NSButton(title: "Làm mới danh sách", target: self, action: #selector(handleRefresh))
+        refreshButton.target = self
+        refreshButton.action = #selector(handleRefresh)
         refreshButton.bezelStyle = .rounded
 
-        let bottomBar = NSStackView(views: [openButton, refreshButton, NSView(), runSelectedButton])
+        languageButton.target = self
+        languageButton.action = #selector(handleToggleLanguage)
+        languageButton.bezelStyle = .rounded
+
+        let bottomBar = NSStackView(views: [openButton, refreshButton, languageButton, NSView(), runSelectedButton])
         bottomBar.orientation = .horizontal
         bottomBar.spacing = 10
 
@@ -180,12 +194,31 @@ public final class LauncherWindowController: NSWindowController, NSTableViewData
         ])
     }
 
+    public func applyLocalization() {
+        let l10n = LocalizationManager.shared
+        self.window?.title = l10n.string(.windowTitleManager)
+
+        if !useLiquidGlass {
+            titleLabel.stringValue = l10n.string(.fallbackTitle)
+            subtitleLabel.stringValue = l10n.string(.windowSubtitleFallback)
+            defaultAppButton.title = l10n.string(.statusDefaultFallbackButton)
+            colName.title = l10n.string(.fallbackColumnName)
+            colPath.title = l10n.string(.fallbackColumnFolder)
+            openButton.title = l10n.string(.fallbackOpenButton)
+            runSelectedButton.title = l10n.string(.fallbackRunSelectedButton)
+            refreshButton.title = l10n.string(.fallbackRefreshButton)
+            languageButton.title = "🌐 \(l10n.language.displayName)"
+            refreshDefaultStatus()
+        }
+    }
+
     public func refreshDefaultStatus() {
+        let l10n = LocalizationManager.shared
         if DefaultAppManager.isDefaultHandlerForExe() {
-            statusLabel.stringValue = "✅ Đã là ứng dụng mặc định khi double-click file .exe"
+            statusLabel.stringValue = l10n.string(.statusDefaultFallbackActive)
             statusLabel.textColor = .systemGreen
         } else {
-            statusLabel.stringValue = "ℹ️ Chưa đặt làm mặc định cho toàn bộ file .exe"
+            statusLabel.stringValue = l10n.string(.statusDefaultFallbackInactive)
             statusLabel.textColor = .secondaryLabelColor
         }
     }
@@ -215,17 +248,23 @@ public final class LauncherWindowController: NSWindowController, NSTableViewData
         }
     }
 
+    @objc private func handleToggleLanguage() {
+        LocalizationManager.shared.toggleLanguage()
+        applyLocalization()
+    }
+
     @objc private func handleSetDefaultApp() {
         let ok = DefaultAppManager.setAsDefaultHandlerForExe()
         refreshDefaultStatus()
+        let l10n = LocalizationManager.shared
         let alert = NSAlert()
         if ok {
-            alert.messageText = "Đã đăng ký Bug On Mac exe làm ứng dụng mặc định cho đuôi .exe"
-            alert.informativeText = "Từ bây giờ bạn có thể double-click trực tiếp vào các file .exe Flash trong Finder để mở ngay."
+            alert.messageText = l10n.string(.alertDefaultSetSuccessTitle)
+            alert.informativeText = l10n.string(.alertDefaultSetSuccessMessage)
             alert.alertStyle = .informational
         } else {
-            alert.messageText = "Cần xác nhận từ macOS"
-            alert.informativeText = "Nếu macOS hỏi xác nhận, hãy chọn 'Use Bug On Mac exe' hoặc chuột phải vào file .exe -> Get Info -> Open with: Bug On Mac exe -> Change All."
+            alert.messageText = l10n.string(.alertDefaultSetConfirmTitle)
+            alert.informativeText = l10n.string(.alertDefaultSetConfirmMessage)
             alert.alertStyle = .warning
         }
         alert.runModal()
@@ -252,8 +291,9 @@ public final class LauncherWindowController: NSWindowController, NSTableViewData
     }
 
     @objc public func handleOpenPanel() {
+        let l10n = LocalizationManager.shared
         let panel = NSOpenPanel()
-        panel.title = "Chọn file Adobe Flash .exe hoặc .swf"
+        panel.title = l10n.string(.openPanelTitle)
         panel.canChooseFiles = true
         panel.canChooseDirectories = false
         panel.allowsMultipleSelection = false
@@ -273,8 +313,9 @@ public final class LauncherWindowController: NSWindowController, NSTableViewData
         ProjectorRunner.run(fileURL: url) { [weak self] result in
             self?.reloadFiles()
             if case .failure(let error) = result {
+                let l10n = LocalizationManager.shared
                 let alert = NSAlert()
-                alert.messageText = "Không thể mở file \(url.lastPathComponent)"
+                alert.messageText = l10n.string(.alertOpenErrorTitle, url.lastPathComponent)
                 alert.informativeText = error.localizedDescription
                 alert.alertStyle = .warning
                 alert.runModal()

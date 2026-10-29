@@ -57,8 +57,9 @@ public final class AppDelegate: NSObject, NSApplicationDelegate {
             ProjectorRunner.run(fileURL: url) { result in
                 if case .failure(let error) = result {
                     hadError = true
+                    let l10n = LocalizationManager.shared
                     let alert = NSAlert()
-                    alert.messageText = "Không thể mở file \(url.lastPathComponent)"
+                    alert.messageText = l10n.string(.alertOpenErrorTitle, url.lastPathComponent)
                     alert.informativeText = error.localizedDescription
                     alert.alertStyle = .warning
                     alert.runModal()

@@ -21,6 +21,15 @@ struct FallbackRoutingTestRunner {
         ExeLibraryStore.shared.addOrUpdate(url: dummyExe)
         assert(ExeLibraryStore.shared.items.count == initialCount + 1, "Store should record newly opened exe file")
 
+        // 3. Test window localization and live language switching
+        LocalizationManager.shared.language = .english
+        let controller = LauncherWindowController()
+        assert(controller.window?.title == "Bug On Mac exe")
+        LocalizationManager.shared.language = .vietnamese
+        controller.applyLocalization()
+        assert(controller.window?.title == "Bug On Mac exe")
+        LocalizationManager.shared.language = .english
+
         print("All Fallback routing tests passed successfully!")
     }
 }
