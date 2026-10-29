@@ -8,20 +8,21 @@ public enum ProjectorRunnerError: LocalizedError {
     case launchFailed(String)
 
     public var errorDescription: String? {
+        let l10n = LocalizationManager.shared
         switch self {
         case .projectorRuntimeMissing:
-            return "Không tìm thấy nhân Adobe Flash Player Projector bên trong gói ứng dụng."
+            return l10n.string(.errorRuntimeMissing)
         case .extractionFailed(let err):
             switch err {
             case .notAFlashExecutable:
-                return "File .exe này không chứa nội dung Adobe Flash Projector (Giai đoạn 1 chỉ hỗ trợ các file .exe dạng Adobe Flash như bộ đề IC3 GS6)."
+                return l10n.string(.errorNotFlashExe)
             case .fileUnreadable(let msg):
-                return "Không thể đọc file: \(msg)"
+                return l10n.string(.errorFileUnreadable, msg)
             }
         case .sessionFailed(let msg):
-            return "Không thể khởi tạo phiên chạy tạm: \(msg)"
+            return l10n.string(.errorSessionFailed, msg)
         case .launchFailed(let msg):
-            return "Không thể khởi chạy Flash Player Projector: \(msg)"
+            return l10n.string(.errorLaunchFailed, msg)
         }
     }
 }

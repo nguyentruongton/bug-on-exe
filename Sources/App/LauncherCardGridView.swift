@@ -2,19 +2,32 @@ import SwiftUI
 import AppKit
 import UniformTypeIdentifiers
 
+public enum SidebarFilter: String, CaseIterable, Identifiable {
+    case all
+    case pinned
+    case recents
+
+    public var id: String { rawValue }
+}
+
 public enum CardGridFormatters {
-    public static func relativeTimeString(from date: Date, relativeTo now: Date = Date()) -> String {
+    public static func relativeTimeString(
+        from date: Date,
+        relativeTo now: Date = Date(),
+        language: AppLanguage = LocalizationManager.shared.language
+    ) -> String {
+        let l10n = LocalizationManager.shared
         let interval = now.timeIntervalSince(date)
         if interval < 60 {
-            return "Vừa mở"
+            return l10n.string(.timeJustNow, language: language)
         } else if interval < 3600 {
             let minutes = max(1, Int(interval / 60))
-            return "\(minutes) phút trước"
+            return l10n.string(.timeMinutesAgo, language: language, args: [minutes])
         } else if interval < 86400 {
             let hours = max(1, Int(interval / 3600))
-            return "\(hours) giờ trước"
+            return l10n.string(.timeHoursAgo, language: language, args: [hours])
         } else if interval < 172800 {
-            return "Hôm qua"
+            return l10n.string(.timeYesterday, language: language)
         } else {
             let formatter = DateFormatter()
             formatter.dateFormat = "dd/MM/yyyy"
@@ -26,6 +39,25 @@ public enum CardGridFormatters {
         let trimmed = query.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmed.isEmpty else { return items }
         return items.filter { $0.name.localizedCaseInsensitiveContains(trimmed) }
+    }
+
+    public static func visibleItems(
+        allItems: [ExeItem],
+        filter: SidebarFilter,
+        query: String
+    ) -> (pinned: [ExeItem], recents: [ExeItem]) {
+        let matched = filterItems(allItems, query: query)
+        let pinned = matched.filter { $0.isPinned }.sorted { $0.lastOpened > $1.lastOpened }
+        let recents = Array(matched.filter { !$0.isPinned }.sorted { $0.lastOpened > $1.lastOpened }.prefix(20))
+
+        switch filter {
+        case .all:
+            return (pinned: pinned, recents: recents)
+        case .pinned:
+            return (pinned: pinned, recents: [])
+        case .recents:
+            return (pinned: [], recents: recents)
+        }
     }
 }
 

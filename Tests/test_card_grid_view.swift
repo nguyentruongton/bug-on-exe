@@ -3,37 +3,46 @@ import Foundation
 @main
 struct CardGridViewTestRunner {
     static func main() throws {
-        // 1. Test Filter Items
-        let item1 = ExeItem(name: "GS6_LV3_TESTING_01.exe", path: URL(fileURLWithPath: "/test/1.exe"), fileSizeFormatted: "5.4 MB")
-        let item2 = ExeItem(name: "Calculator_Flash.exe", path: URL(fileURLWithPath: "/test/2.exe"), fileSizeFormatted: "1.2 MB")
-        let item3 = ExeItem(name: "GS6_LV3_TRAINING_02.exe", path: URL(fileURLWithPath: "/test/3.exe"), fileSizeFormatted: "5.4 MB")
+        // 1. Test Filter Items by search query
+        let item1 = ExeItem(name: "GS6_LV3_TESTING_01.exe", path: URL(fileURLWithPath: "/test/1.exe"), fileSizeFormatted: "5.4 MB", isPinned: true)
+        let item2 = ExeItem(name: "Calculator_Flash.exe", path: URL(fileURLWithPath: "/test/2.exe"), fileSizeFormatted: "1.2 MB", isPinned: false)
+        let item3 = ExeItem(name: "GS6_LV3_TRAINING_02.exe", path: URL(fileURLWithPath: "/test/3.exe"), fileSizeFormatted: "5.4 MB", isPinned: false)
 
         let all = [item1, item2, item3]
 
-        let filterEmpty = CardGridFormatters.filterItems(all, query: "")
-        assert(filterEmpty.count == 3, "Empty query should return all items")
+        assert(CardGridFormatters.filterItems(all, query: "").count == 3)
+        assert(CardGridFormatters.filterItems(all, query: "gs6").count == 2)
+        assert(CardGridFormatters.filterItems(all, query: "calc").first?.name == "Calculator_Flash.exe")
+        assert(CardGridFormatters.filterItems(all, query: "nonexistent").isEmpty)
 
-        let filterGS6 = CardGridFormatters.filterItems(all, query: "gs6")
-        assert(filterGS6.count == 2, "Query 'gs6' should return 2 items")
+        // 2. Test SidebarFilter slicing + query
+        let allSlice = CardGridFormatters.visibleItems(allItems: all, filter: .all, query: "")
+        assert(allSlice.pinned.count == 1 && allSlice.recents.count == 2)
 
-        let filterCalc = CardGridFormatters.filterItems(all, query: "calc")
-        assert(filterCalc.count == 1 && filterCalc[0].name == "Calculator_Flash.exe", "Query 'calc' should match item2")
+        let pinnedSlice = CardGridFormatters.visibleItems(allItems: all, filter: .pinned, query: "")
+        assert(pinnedSlice.pinned.count == 1 && pinnedSlice.recents.isEmpty)
 
-        let filterNone = CardGridFormatters.filterItems(all, query: "nonexistent")
-        assert(filterNone.isEmpty, "Query nonexistent should return empty")
+        let recentsSlice = CardGridFormatters.visibleItems(allItems: all, filter: .recents, query: "gs6")
+        assert(recentsSlice.pinned.isEmpty && recentsSlice.recents.count == 1 && recentsSlice.recents[0].name == "GS6_LV3_TRAINING_02.exe")
 
-        // 2. Test Relative Time Formatter
+        // 3. Test Relative Time Formatter in English (default) and Vietnamese
         let now = Date()
-        let justNow = CardGridFormatters.relativeTimeString(from: now, relativeTo: now)
-        assert(justNow == "Vừa mở", "Relative time for now should be 'Vừa mở'")
+        assert(CardGridFormatters.relativeTimeString(from: now, relativeTo: now, language: .english) == "Just now")
+        assert(CardGridFormatters.relativeTimeString(from: now.addingTimeInterval(-300), relativeTo: now, language: .english) == "5 min ago")
+        assert(CardGridFormatters.relativeTimeString(from: now.addingTimeInterval(-7200), relativeTo: now, language: .english) == "2 hr ago")
+        assert(CardGridFormatters.relativeTimeString(from: now.addingTimeInterval(-100000), relativeTo: now, language: .english) == "Yesterday")
 
-        let fiveMinsAgo = now.addingTimeInterval(-300)
-        let fiveMins = CardGridFormatters.relativeTimeString(from: fiveMinsAgo, relativeTo: now)
-        assert(fiveMins == "5 phút trước", "5 mins ago should be '5 phút trước'")
+        assert(CardGridFormatters.relativeTimeString(from: now, relativeTo: now, language: .vietnamese) == "Vừa mở")
+        assert(CardGridFormatters.relativeTimeString(from: now.addingTimeInterval(-300), relativeTo: now, language: .vietnamese) == "5 phút trước")
+        assert(CardGridFormatters.relativeTimeString(from: now.addingTimeInterval(-7200), relativeTo: now, language: .vietnamese) == "2 giờ trước")
+        assert(CardGridFormatters.relativeTimeString(from: now.addingTimeInterval(-100000), relativeTo: now, language: .vietnamese) == "Hôm qua")
 
-        let twoHoursAgo = now.addingTimeInterval(-7200)
-        let twoHours = CardGridFormatters.relativeTimeString(from: twoHoursAgo, relativeTo: now)
-        assert(twoHours == "2 giờ trước", "2 hours ago should be '2 giờ trước'")
+        // 4. Test ProjectorRunnerError localization in English and Vietnamese
+        LocalizationManager.shared.language = .english
+        assert(ProjectorRunnerError.projectorRuntimeMissing.errorDescription?.contains("Adobe Flash Player Projector runtime") == true)
+        LocalizationManager.shared.language = .vietnamese
+        assert(ProjectorRunnerError.projectorRuntimeMissing.errorDescription?.contains("Không tìm thấy nhân") == true)
+        LocalizationManager.shared.language = .english
 
         print("All CardGrid tests passed successfully!")
     }
