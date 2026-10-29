@@ -52,6 +52,7 @@ public final class AppDelegate: NSObject, NSApplicationDelegate {
         var hadError = false
 
         for url in urls {
+            ExeLibraryStore.shared.addOrUpdate(url: url)
             group.enter()
             ProjectorRunner.run(fileURL: url) { result in
                 if case .failure(let error) = result {

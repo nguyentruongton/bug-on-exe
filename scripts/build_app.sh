@@ -132,7 +132,9 @@ swiftc \
   "$PROJ_ROOT/Sources/Core/ExeSwfExtractor.swift" \
   "$PROJ_ROOT/Sources/Core/SessionManager.swift" \
   "$PROJ_ROOT/Sources/Core/DefaultAppManager.swift" \
+  "$PROJ_ROOT/Sources/Core/ExeLibraryStore.swift" \
   "$PROJ_ROOT/Sources/App/ProjectorRunner.swift" \
+  "$PROJ_ROOT/Sources/App/LauncherCardGridView.swift" \
   "$PROJ_ROOT/Sources/App/LauncherWindowController.swift" \
   "$PROJ_ROOT/Sources/App/AppDelegate.swift" \
   "$PROJ_ROOT/Sources/App/main.swift" \
