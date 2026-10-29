@@ -61,8 +61,6 @@ public struct LauncherCardGridView: View {
                 topToolbar
                 Divider().opacity(0.2)
                 mainContent
-                Divider().opacity(0.2)
-                bottomStatusBar
             }
 
             // Window Drop Overlay Highlight
@@ -392,23 +390,6 @@ public struct LauncherCardGridView: View {
             handleDroppedFiles(providers)
             return true
         }
-    }
-
-    // MARK: - Bottom Status Bar
-    private var bottomStatusBar: some View {
-        HStack {
-            let total = store.items.count
-            Text("Tổng cộng: \(total) tập tin • Nhấp đúp vào thẻ để chạy ngay")
-                .font(.system(size: 10))
-                .foregroundColor(.secondary)
-            Spacer()
-            Text("Liquid Glass UI (macOS 26+)")
-                .font(.system(size: 10, weight: .medium))
-                .foregroundColor(.secondary.opacity(0.8))
-        }
-        .padding(.horizontal, 16)
-        .padding(.vertical, 6)
-        .background(.ultraThinMaterial)
     }
 
     private func handleDroppedFiles(_ providers: [NSItemProvider]) {
