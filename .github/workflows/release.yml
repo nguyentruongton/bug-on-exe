@@ -1,0 +1,36 @@
+name: Release Bug On EXE
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build-and-release:
+    runs-on: macos-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Build and package Bug On EXE (.dmg & .zip)
+        run: |
+          chmod +x scripts/build_app.sh scripts/package_release.sh
+          bash scripts/package_release.sh
+
+      - name: Verify release packages
+        run: |
+          swiftc -parse-as-library Tests/test_release_package.swift -o /tmp/test_release_package
+          /tmp/test_release_package
+
+      - name: Upload Release Artifacts
+        if: startsWith(github.ref, 'refs/tags/v')
+        uses: softprops/action-gh-release@v2
+        with:
+          generate_release_notes: true
+          files: |
+            dist/Bug-On-EXE-macOS.dmg
+            dist/Bug-On-EXE-macOS.zip
