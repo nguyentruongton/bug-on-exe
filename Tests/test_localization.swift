@@ -34,12 +34,15 @@ struct LocalizationTestRunner {
         manager.toggleLanguage()
         assert(manager.language == .vietnamese)
 
-        // 5. Every L10nKey has non-empty translations in both languages
+        // 5. Every L10nKey has non-empty translations in both languages and uses "Bug On EXE"
+        assert(manager.string(.windowTitleManager) == "Bug On EXE")
+        assert(manager.string(.fallbackTitle) == "Bug On EXE")
         for lang in AppLanguage.allCases {
             manager.language = lang
             for key in L10nKey.allCases {
                 let val = manager.string(key)
                 assert(!val.isEmpty && val != key.rawValue, "Missing translation for \(key.rawValue) in \(lang.rawValue)")
+                assert(!val.contains("Bug On Mac exe"), "Legacy brand name found in \(key.rawValue) (\(lang.rawValue)): \(val)")
             }
         }
 

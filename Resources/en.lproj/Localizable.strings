@@ -1,4 +1,4 @@
-"window.title.manager" = "Bug On Mac exe";
+"window.title.manager" = "Bug On EXE";
 "window.subtitle.fallback" = "Double-click any .exe file in Finder, or drag and drop / double-click an item below to run Flash content.";
 "sidebar.section.library" = "Library";
 "sidebar.item.all" = "All Files";
@@ -32,16 +32,16 @@
 "alert.unsupported.message" = "Only .exe or .swf files are supported.";
 "alert.open_error.title" = "Cannot Open \"%@\"";
 "alert.default_set.success_title" = "Default App Updated";
-"alert.default_set.success_message" = "Bug On Mac exe is now the default application for .exe files. You can double-click .exe files in Finder to launch them directly.";
+"alert.default_set.success_message" = "Bug On EXE is now the default application for .exe files. You can double-click .exe files in Finder to launch them directly.";
 "alert.default_set.confirm_title" = "macOS Confirmation Required";
-"alert.default_set.confirm_message" = "If prompted by macOS, choose 'Use Bug On Mac exe', or right-click an .exe file in Finder -> Get Info -> Open with -> Change All.";
+"alert.default_set.confirm_message" = "If prompted by macOS, choose 'Use Bug On EXE', or right-click an .exe file in Finder -> Get Info -> Open with -> Change All.";
 "open_panel.title" = "Choose an Adobe Flash .exe or .swf File";
 "error.runtime_missing" = "Adobe Flash Player Projector runtime was not found inside the application bundle.";
 "error.not_flash_exe" = "This .exe file does not contain an embedded Adobe Flash Projector payload.";
 "error.file_unreadable" = "Unable to read file: %@";
 "error.session_failed" = "Failed to prepare temporary session: %@";
 "error.launch_failed" = "Failed to launch Flash Player Projector: %@";
-"fallback.title" = "Bug On Mac exe";
+"fallback.title" = "Bug On EXE";
 "fallback.column.name" = "File Name (.exe / .swf)";
 "fallback.column.folder" = "Folder";
 "fallback.button.open" = "Open Another .exe File...";

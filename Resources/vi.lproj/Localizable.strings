@@ -1,4 +1,4 @@
-"window.title.manager" = "Bug On Mac exe";
+"window.title.manager" = "Bug On EXE";
 "window.subtitle.fallback" = "Double-click trực tiếp vào file .exe ngoài Finder hoặc kéo-thả / bấm đúp vào danh sách dưới đây để chạy bài thi Flash.";
 "sidebar.section.library" = "Thư viện";
 "sidebar.item.all" = "Tất cả file";
@@ -34,14 +34,14 @@
 "alert.default_set.success_title" = "Đã đăng ký làm ứng dụng mặc định";
 "alert.default_set.success_message" = "Từ bây giờ bạn có thể double-click trực tiếp vào các file .exe Flash trong Finder để mở ngay.";
 "alert.default_set.confirm_title" = "Cần xác nhận từ macOS";
-"alert.default_set.confirm_message" = "Nếu macOS hỏi xác nhận, hãy chọn 'Use Bug On Mac exe' hoặc chuột phải vào file .exe -> Get Info -> Open with: Bug On Mac exe -> Change All.";
+"alert.default_set.confirm_message" = "Nếu macOS hỏi xác nhận, hãy chọn 'Use Bug On EXE' hoặc chuột phải vào file .exe -> Get Info -> Open with: Bug On EXE -> Change All.";
 "open_panel.title" = "Chọn file Adobe Flash .exe hoặc .swf";
 "error.runtime_missing" = "Không tìm thấy nhân Adobe Flash Player Projector bên trong gói ứng dụng.";
 "error.not_flash_exe" = "File .exe này không chứa nội dung Adobe Flash Projector.";
 "error.file_unreadable" = "Không thể đọc file: %@";
 "error.session_failed" = "Không thể khởi tạo phiên chạy tạm: %@";
 "error.launch_failed" = "Không thể khởi chạy Flash Player Projector: %@";
-"fallback.title" = "Bug On Mac exe";
+"fallback.title" = "Bug On EXE";
 "fallback.column.name" = "Tên file (.exe / .swf)";
 "fallback.column.folder" = "Thư mục";
 "fallback.button.open" = "Mở file .exe khác...";

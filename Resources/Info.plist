@@ -10,7 +10,7 @@
         <string>vi</string>
     </array>
     <key>CFBundleDisplayName</key>
-    <string>Bug On Mac exe</string>
+    <string>Bug On EXE</string>
     <key>CFBundleExecutable</key>
     <string>BugOnMacExe</string>
     <key>CFBundleIconFile</key>
@@ -20,7 +20,7 @@
     <key>CFBundleInfoDictionaryVersion</key>
     <string>6.0</string>
     <key>CFBundleName</key>
-    <string>Bug On Mac exe</string>
+    <string>Bug On EXE</string>
     <key>CFBundlePackageType</key>
     <string>APPL</string>
     <key>CFBundleShortVersionString</key>

@@ -24,7 +24,7 @@ struct FallbackRoutingTestRunner {
         // 3. Test window localization and live language switching in fallback mode
         LocalizationManager.shared.language = .english
         let controller = LauncherWindowController(majorVersion: 15)
-        assert(controller.window?.title == "Bug On Mac exe")
+        assert(controller.window?.title == "Bug On EXE")
         assert(controller.currentFallbackSubtitle.contains("Double-click any .exe file in Finder"))
         assert(controller.currentFallbackOpenButtonTitle == "Open Another .exe File...")
         LocalizationManager.shared.language = .vietnamese

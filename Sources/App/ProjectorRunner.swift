@@ -64,7 +64,7 @@ public final class ProjectorRunner {
         if fm.fileExists(atPath: relativeBundled.path) {
             return relativeBundled
         }
-        let systemCopy = URL(fileURLWithPath: "/Applications/Bug On Mac exe.app/Contents/Resources/Flash Player.app")
+        let systemCopy = URL(fileURLWithPath: "/Applications/Bug On EXE.app/Contents/Resources/Flash Player.app")
         if fm.fileExists(atPath: systemCopy.path) {
             return systemCopy
         }
