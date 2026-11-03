@@ -10,8 +10,15 @@ struct SessionTestRunner {
         let trustFile = tempRoot.appendingPathComponent("FlashPlayerTrust/BugOnMacExe.cfg")
         let manager = SessionManager(cacheRootURL: cacheRoot, trustConfigURL: trustFile)
 
-        let sourceURL = URL(fileURLWithPath: "/Users/stark/Documents/IC3/GS6 Level 3/GS6_LV3_TESTING_01_(2526GM).exe")
-        let payload = try ExeSwfExtractor.extract(from: sourceURL)
+        let sourceURL = tempRoot.appendingPathComponent("Mock IC3 (GS6)/Test_01.exe")
+        try FileManager.default.createDirectory(at: sourceURL.deletingLastPathComponent(), withIntermediateDirectories: true)
+        try Data([0x4D, 0x5A]).write(to: sourceURL)
+        let payload = SwfPayload(
+            data: Data([0x46, 0x57, 0x53, 0x09, 0x14, 0x00, 0x00, 0x00]),
+            signature: "FWS",
+            version: 9,
+            uncompressedLength: 20
+        )
 
         // 1. Prepare session for path with spaces & parentheses
         let session1 = try manager.prepareSession(for: sourceURL, payload: payload)

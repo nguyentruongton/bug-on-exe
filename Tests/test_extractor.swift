@@ -48,13 +48,16 @@ struct ExtractorTestRunner {
         let overlayPayload = try ExeSwfExtractor.extract(from: exeWithOverlay)
         assert(overlayPayload.signature == "FWS" && overlayPayload.version == 9 && overlayPayload.data.count == 20)
 
-        // 5. Real IC3 GS6 Flash Projector .exe file
-        let realURL = URL(fileURLWithPath: "/Users/stark/Documents/IC3/GS6 Level 3/GS6_LV3_TESTING_01_(2526GM).exe")
-        let realPayload = try ExeSwfExtractor.extract(from: realURL)
-        assert(realPayload.signature == "CWS")
-        assert(realPayload.version == 9)
-        assert(realPayload.data.count == 1_208_512)
-        assert(realPayload.uncompressedLength == 850_135)
+        // 5. Optional Real IC3 GS6 Flash Projector .exe file if present
+        let userHome = FileManager.default.homeDirectoryForCurrentUser
+        let realURL = userHome.appendingPathComponent("Documents/IC3/GS6 Level 3/GS6_LV3_TESTING_01_(2526GM).exe")
+        if FileManager.default.fileExists(atPath: realURL.path) {
+            let realPayload = try ExeSwfExtractor.extract(from: realURL)
+            assert(realPayload.signature == "CWS")
+            assert(realPayload.version == 9)
+            assert(realPayload.data.count == 1_208_512)
+            assert(realPayload.uncompressedLength == 850_135)
+        }
         print("ALL EXTRACTOR TESTS PASSED")
     }
 }

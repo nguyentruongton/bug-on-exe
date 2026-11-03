@@ -3,8 +3,21 @@ import Foundation
 @main
 struct ProjectorRunnerTest {
     static func main() throws {
-        // 1. Existing IC3 Flash Projector .exe still prepares as Flash session
-        let exeURL = URL(fileURLWithPath: "/Users/stark/Documents/IC3/GS6 Level 3/GS6_LV3_TESTING_01_(2526GM).exe")
+        let fm = FileManager.default
+        let tempDir = fm.temporaryDirectory.appendingPathComponent("BugOnExeRunnerTest-\(UUID().uuidString)", isDirectory: true)
+        defer { try? fm.removeItem(at: tempDir) }
+        try fm.createDirectory(at: tempDir, withIntermediateDirectories: true)
+
+        // 1. Synthetic Flash Projector .exe prepares as Flash session
+        let exeURL = tempDir.appendingPathComponent("MockFlashApp (GS6).exe")
+        var syntheticData = Data([0x4D, 0x5A]) // PE MZ header
+        syntheticData.append(contentsOf: [0x46, 0x57, 0x53, 0x09, 0x14, 0x00, 0x00, 0x00]) // FWS header
+        syntheticData.append(contentsOf: [0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00]) // 12 payload bytes (total 20)
+        syntheticData.append(contentsOf: [0x56, 0x34, 0x12, 0xFA]) // 0xFA123456
+        let swfLen: UInt32 = 20
+        withUnsafeBytes(of: swfLen.littleEndian) { syntheticData.append(contentsOf: $0) }
+        try syntheticData.write(to: exeURL)
+
         let session = try ProjectorRunner.prepareForLaunch(fileURL: exeURL)
         assert(FileManager.default.fileExists(atPath: session.swfFileURL.path))
         let recents = ProjectorRunner.recentFiles()
@@ -18,10 +31,6 @@ struct ProjectorRunnerTest {
         }
 
         // 2. Standalone Win32 PE32 prepares as .windows(exeURL, isExtractedFromSfx: false)
-        let fm = FileManager.default
-        let tempDir = fm.temporaryDirectory.appendingPathComponent("BugOnExeRunnerTest-\(UUID().uuidString)", isDirectory: true)
-        defer { try? fm.removeItem(at: tempDir) }
-        try fm.createDirectory(at: tempDir, withIntermediateDirectories: true)
 
         let winExe = tempDir.appendingPathComponent("stress.exe")
         var mzData = Data([0x4D, 0x5A, 0x90, 0x00])
