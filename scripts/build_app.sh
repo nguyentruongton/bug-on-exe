@@ -331,9 +331,12 @@ swiftc \
   -target x86_64-apple-macosx13.0 \
   "$PROJ_ROOT/Sources/Core/LocalizationManager.swift" \
   "$PROJ_ROOT/Sources/Core/ExeSwfExtractor.swift" \
+  "$PROJ_ROOT/Sources/Core/PortableExeExtractor.swift" \
+  "$PROJ_ROOT/Sources/Core/WineRuntimeManager.swift" \
   "$PROJ_ROOT/Sources/Core/SessionManager.swift" \
   "$PROJ_ROOT/Sources/Core/DefaultAppManager.swift" \
   "$PROJ_ROOT/Sources/Core/ExeLibraryStore.swift" \
+  "$PROJ_ROOT/Sources/App/WineInstallProgressWindowController.swift" \
   "$PROJ_ROOT/Sources/App/ProjectorRunner.swift" \
   "$PROJ_ROOT/Sources/App/LauncherCardGridView.swift" \
   "$PROJ_ROOT/Sources/App/LauncherWindowController.swift" \
