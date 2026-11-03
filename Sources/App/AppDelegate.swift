@@ -19,6 +19,9 @@ public final class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     public func applicationDidFinishLaunching(_ notification: Notification) {
+        // Initialize standard macOS menu bar with dynamic localization
+        AppMenuManager.shared.setupMenu()
+
         // Dynamically bind adaptive app icon from Asset Catalog for Light/Dark mode
         if let dynamicIcon = NSImage(named: "AppIconImage") {
             NSApp.applicationIconImage = dynamicIcon
@@ -95,5 +98,10 @@ public final class AppDelegate: NSObject, NSApplicationDelegate {
         launcherWindowController?.showWindow(nil)
         launcherWindowController?.window?.makeKeyAndOrderFront(nil)
         NSApp.activate(ignoringOtherApps: true)
+    }
+
+    @objc public func openDocument(_ sender: Any?) {
+        showLauncherWindow()
+        launcherWindowController?.handleOpenPanel()
     }
 }

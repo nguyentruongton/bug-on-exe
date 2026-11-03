@@ -108,6 +108,7 @@ swiftc \
   "$PROJ_ROOT/Sources/App/ProjectorRunner.swift" \
   "$PROJ_ROOT/Sources/App/LauncherCardGridView.swift" \
   "$PROJ_ROOT/Sources/App/LauncherWindowController.swift" \
+  "$PROJ_ROOT/Sources/App/AppMenuManager.swift" \
   "$PROJ_ROOT/Sources/App/AppDelegate.swift" \
   "$PROJ_ROOT/Sources/App/main.swift" \
   -o "$APP_BUNDLE/Contents/MacOS/BugOnMacExe"
