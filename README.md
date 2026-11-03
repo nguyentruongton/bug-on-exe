@@ -99,7 +99,7 @@ The name carries a witty double meaning:
 
 #### Option 1: Download Pre-built Release (Recommended)
 
-1. Navigate to the [**Releases**](../../releases) section on GitHub.
+1. Navigate to the [**Releases**](https://github.com/stark/bug-on-mac-exe/releases) section on GitHub.
 2. Download the latest release:
    - **`Bug-On-EXE-macOS.dmg`** *(Recommended)*: Open the DMG and drag **Bug On EXE.app** into your **Applications** folder.
    - **`Bug-On-EXE-macOS.zip`**: Extract and copy **Bug On EXE.app** to `/Applications`.
@@ -111,9 +111,7 @@ The name carries a witty double meaning:
    *(Alternatively, right-click the app in Finder and select **Open**).*
 4. Launch **Bug On EXE**, click **Set as Default**, and enjoy running your `.exe` and `.swf` files natively!
 
----
-
-### 🛠️ Building from Source
+#### Option 2: Build from Source
 
 **Requirements:**
 - macOS 13.0 or later (Intel `x86_64` or Apple Silicon via Rosetta 2)
@@ -210,7 +208,7 @@ Tên gọi **"Bug On EXE"** mang một thông điệp chơi chữ thú vị:
 
 #### Cách 1: Tải bản đóng gói sẵn (Khuyên dùng)
 
-1. Truy cập mục [**Releases**](../../releases) ở cột bên phải repository này.
+1. Truy cập mục [**Releases**](https://github.com/stark/bug-on-mac-exe/releases) ở cột bên phải repository này.
 2. Tải về phiên bản mới nhất:
    - **`Bug-On-EXE-macOS.dmg`** *(Khuyên dùng)*: Mở file DMG và kéo biểu tượng **Bug On EXE.app** vào thư mục **Applications**.
    - **`Bug-On-EXE-macOS.zip`**: Giải nén và chép file **Bug On EXE.app** vào thư mục `/Applications`.
@@ -222,9 +220,7 @@ Tên gọi **"Bug On EXE"** mang một thông điệp chơi chữ thú vị:
    *(Hoặc chuột phải vào ứng dụng trong Finder và chọn **Open**).*
 4. Mở **Bug On EXE**, bấm nút **Đặt làm mặc định (Set as Default)**, và từ giờ bạn có thể double-click mở bất kỳ file `.exe` hay `.swf` nào một cách hoàn toàn tự nhiên!
 
----
-
-### 🛠️ Tự biên dịch từ mã nguồn (Build from Source)
+#### Cách 2: Tự biên dịch từ mã nguồn (Build from Source)
 
 **Yêu cầu hệ thống:**
 - macOS 13.0 trở lên (máy Mac Intel `x86_64` hoặc Apple Silicon chạy qua Rosetta 2)
