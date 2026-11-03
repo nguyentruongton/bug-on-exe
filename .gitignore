@@ -1,6 +1,7 @@
 .superpowers/
 dist/
-Vendor/
+Vendor/*
+!Vendor/checksums.sha256
 build/
 *.o
 .DS_Store
