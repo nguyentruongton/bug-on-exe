@@ -54,6 +54,23 @@ struct LocalizationTestRunner {
         assert(manager.string(.alertWineRequiredTitle).contains("Wine"))
         assert(manager.string(.wineProgressDownloading, 50, 200, 25).contains("25%"))
 
+        // 7. Menu bar translations
+        manager.language = .english
+        assert(manager.string(.menuAppAbout) == "About Bug On EXE")
+        assert(manager.string(.menuAppQuit) == "Quit Bug On EXE")
+        assert(manager.string(.menuFile) == "File")
+        assert(manager.string(.menuFileOpen) == "Open…")
+        assert(manager.string(.menuEdit) == "Edit")
+        assert(manager.string(.menuWindow) == "Window")
+
+        manager.language = .vietnamese
+        assert(manager.string(.menuAppAbout) == "Giới thiệu Bug On EXE")
+        assert(manager.string(.menuAppQuit) == "Thoát Bug On EXE")
+        assert(manager.string(.menuFile) == "Tệp")
+        assert(manager.string(.menuFileOpen) == "Mở…")
+        assert(manager.string(.menuEdit) == "Chỉnh sửa")
+        assert(manager.string(.menuWindow) == "Cửa sổ")
+
         print("ALL LOCALIZATION TESTS PASSED")
     }
 }

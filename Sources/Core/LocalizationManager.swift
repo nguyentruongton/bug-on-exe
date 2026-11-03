@@ -84,6 +84,25 @@ public enum L10nKey: String, CaseIterable {
     case wineProgressExtracting = "wine.progress.extracting"
     case errorWineInstallFailed = "error.wine_install_failed"
     case errorPortableExtractionFailed = "error.portable_extraction_failed"
+    case menuAppAbout = "menu.app.about"
+    case menuAppHide = "menu.app.hide"
+    case menuAppHideOthers = "menu.app.hide_others"
+    case menuAppShowAll = "menu.app.show_all"
+    case menuAppQuit = "menu.app.quit"
+    case menuFile = "menu.file"
+    case menuFileOpen = "menu.file.open"
+    case menuFileCloseWindow = "menu.file.close_window"
+    case menuEdit = "menu.edit"
+    case menuEditUndo = "menu.edit.undo"
+    case menuEditRedo = "menu.edit.redo"
+    case menuEditCut = "menu.edit.cut"
+    case menuEditCopy = "menu.edit.copy"
+    case menuEditPaste = "menu.edit.paste"
+    case menuEditSelectAll = "menu.edit.select_all"
+    case menuWindow = "menu.window"
+    case menuWindowMinimize = "menu.window.minimize"
+    case menuWindowZoom = "menu.window.zoom"
+    case menuWindowBringAllToFront = "menu.window.bring_all_to_front"
 }
 
 public final class LocalizationManager: ObservableObject {
@@ -201,7 +220,26 @@ public final class LocalizationManager: ObservableObject {
         .wineProgressDownloading: "Downloading Wine runtime: %d MB / %d MB (%d%%)",
         .wineProgressExtracting: "Extracting and configuring Wine runtime...",
         .errorWineInstallFailed: "Failed to install Wine runtime: %@",
-        .errorPortableExtractionFailed: "Failed to unpack portable executable: %@"
+        .errorPortableExtractionFailed: "Failed to unpack portable executable: %@",
+        .menuAppAbout: "About Bug On EXE",
+        .menuAppHide: "Hide Bug On EXE",
+        .menuAppHideOthers: "Hide Others",
+        .menuAppShowAll: "Show All",
+        .menuAppQuit: "Quit Bug On EXE",
+        .menuFile: "File",
+        .menuFileOpen: "Open…",
+        .menuFileCloseWindow: "Close Window",
+        .menuEdit: "Edit",
+        .menuEditUndo: "Undo",
+        .menuEditRedo: "Redo",
+        .menuEditCut: "Cut",
+        .menuEditCopy: "Copy",
+        .menuEditPaste: "Paste",
+        .menuEditSelectAll: "Select All",
+        .menuWindow: "Window",
+        .menuWindowMinimize: "Minimize",
+        .menuWindowZoom: "Zoom",
+        .menuWindowBringAllToFront: "Bring All to Front"
     ]
 
     private static let vietnameseTable: [L10nKey: String] = [
@@ -265,6 +303,25 @@ public final class LocalizationManager: ObservableObject {
         .wineProgressDownloading: "Đang tải nhân Wine: %d MB / %d MB (%d%%)",
         .wineProgressExtracting: "Đang giải nén và cấu hình nhân Wine...",
         .errorWineInstallFailed: "Không thể cài đặt nhân Wine: %@",
-        .errorPortableExtractionFailed: "Không thể giải nén gói ứng dụng portable: %@"
+        .errorPortableExtractionFailed: "Không thể giải nén gói ứng dụng portable: %@",
+        .menuAppAbout: "Giới thiệu Bug On EXE",
+        .menuAppHide: "Ẩn Bug On EXE",
+        .menuAppHideOthers: "Ẩn các ứng dụng khác",
+        .menuAppShowAll: "Hiện tất cả",
+        .menuAppQuit: "Thoát Bug On EXE",
+        .menuFile: "Tệp",
+        .menuFileOpen: "Mở…",
+        .menuFileCloseWindow: "Đóng cửa sổ",
+        .menuEdit: "Chỉnh sửa",
+        .menuEditUndo: "Hoàn tác",
+        .menuEditRedo: "Làm lại",
+        .menuEditCut: "Cắt",
+        .menuEditCopy: "Sao chép",
+        .menuEditPaste: "Dán",
+        .menuEditSelectAll: "Chọn tất cả",
+        .menuWindow: "Cửa sổ",
+        .menuWindowMinimize: "Thu nhỏ",
+        .menuWindowZoom: "Phóng to",
+        .menuWindowBringAllToFront: "Đưa tất cả lên trước"
     ]
 }
