@@ -49,3 +49,13 @@
 "fallback.button.refresh" = "Làm mới danh sách";
 "empty.pinned" = "Chưa có file nào được ghim. Hãy bấm biểu tượng ghim trên thẻ để giữ file ở đầu danh sách.";
 "empty.search" = "Không tìm thấy file .exe hoặc .swf phù hợp.";
+"alert.wine_required.title" = "Cần tải thêm nhân tương thích Wine";
+"alert.wine_required.message" = "\"%@\" là ứng dụng/game Windows. Bug On EXE cần tải và cài đặt ngầm nhân tương thích Wine (~200 MB) một lần duy nhất để khởi chạy.";
+"alert.wine_required.install_button" = "Tải & Chạy ngay";
+"alert.cancel_button" = "Hủy";
+"wine.progress.window_title" = "Đang cài đặt nhân Wine";
+"wine.progress.preparing" = "Đang kết nối máy chủ tải xuống...";
+"wine.progress.downloading" = "Đang tải nhân Wine: %d MB / %d MB (%d%%)";
+"wine.progress.extracting" = "Đang giải nén và cấu hình nhân Wine...";
+"error.wine_install_failed" = "Không thể cài đặt nhân Wine: %@";
+"error.portable_extraction_failed" = "Không thể giải nén gói ứng dụng portable: %@";

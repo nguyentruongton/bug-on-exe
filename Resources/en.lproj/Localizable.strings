@@ -49,3 +49,13 @@
 "fallback.button.refresh" = "Refresh List";
 "empty.pinned" = "No pinned files yet. Click the pin icon on any card to keep it at the top.";
 "empty.search" = "No matching .exe or .swf files found.";
+"alert.wine_required.title" = "Additional Wine Runtime Required";
+"alert.wine_required.message" = "\"%@\" is a Windows application. Bug On EXE needs to download and install the Wine compatibility runtime (~200 MB) once to run Windows games and portable apps.";
+"alert.wine_required.install_button" = "Download & Run";
+"alert.cancel_button" = "Cancel";
+"wine.progress.window_title" = "Installing Wine Runtime";
+"wine.progress.preparing" = "Connecting to download server...";
+"wine.progress.downloading" = "Downloading Wine runtime: %d MB / %d MB (%d%%)";
+"wine.progress.extracting" = "Extracting and configuring Wine runtime...";
+"error.wine_install_failed" = "Failed to install Wine runtime: %@";
+"error.portable_extraction_failed" = "Failed to unpack portable executable: %@";

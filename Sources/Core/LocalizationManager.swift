@@ -74,6 +74,16 @@ public enum L10nKey: String, CaseIterable {
     case fallbackRefreshButton = "fallback.button.refresh"
     case emptyStatePinned = "empty.pinned"
     case emptyStateSearch = "empty.search"
+    case alertWineRequiredTitle = "alert.wine_required.title"
+    case alertWineRequiredMessage = "alert.wine_required.message"
+    case alertWineInstallButton = "alert.wine_required.install_button"
+    case alertCancelButton = "alert.cancel_button"
+    case wineProgressWindowTitle = "wine.progress.window_title"
+    case wineProgressPreparing = "wine.progress.preparing"
+    case wineProgressDownloading = "wine.progress.downloading"
+    case wineProgressExtracting = "wine.progress.extracting"
+    case errorWineInstallFailed = "error.wine_install_failed"
+    case errorPortableExtractionFailed = "error.portable_extraction_failed"
 }
 
 public final class LocalizationManager: ObservableObject {
@@ -181,7 +191,17 @@ public final class LocalizationManager: ObservableObject {
         .fallbackRunSelectedButton: "Run Selected",
         .fallbackRefreshButton: "Refresh List",
         .emptyStatePinned: "No pinned files yet. Click the pin icon on any card to keep it at the top.",
-        .emptyStateSearch: "No matching .exe or .swf files found."
+        .emptyStateSearch: "No matching .exe or .swf files found.",
+        .alertWineRequiredTitle: "Additional Wine Runtime Required",
+        .alertWineRequiredMessage: "\"%@\" is a Windows application. Bug On EXE needs to download and install the Wine compatibility runtime (~200 MB) once to run Windows games and portable apps.",
+        .alertWineInstallButton: "Download & Run",
+        .alertCancelButton: "Cancel",
+        .wineProgressWindowTitle: "Installing Wine Runtime",
+        .wineProgressPreparing: "Connecting to download server...",
+        .wineProgressDownloading: "Downloading Wine runtime: %d MB / %d MB (%d%%)",
+        .wineProgressExtracting: "Extracting and configuring Wine runtime...",
+        .errorWineInstallFailed: "Failed to install Wine runtime: %@",
+        .errorPortableExtractionFailed: "Failed to unpack portable executable: %@"
     ]
 
     private static let vietnameseTable: [L10nKey: String] = [
@@ -235,6 +255,16 @@ public final class LocalizationManager: ObservableObject {
         .fallbackRunSelectedButton: "Chạy bài đã chọn",
         .fallbackRefreshButton: "Làm mới danh sách",
         .emptyStatePinned: "Chưa có file nào được ghim. Hãy bấm biểu tượng ghim trên thẻ để giữ file ở đầu danh sách.",
-        .emptyStateSearch: "Không tìm thấy file .exe hoặc .swf phù hợp."
+        .emptyStateSearch: "Không tìm thấy file .exe hoặc .swf phù hợp.",
+        .alertWineRequiredTitle: "Cần tải thêm nhân tương thích Wine",
+        .alertWineRequiredMessage: "\"%@\" là ứng dụng/game Windows. Bug On EXE cần tải và cài đặt ngầm nhân tương thích Wine (~200 MB) một lần duy nhất để khởi chạy.",
+        .alertWineInstallButton: "Tải & Chạy ngay",
+        .alertCancelButton: "Hủy",
+        .wineProgressWindowTitle: "Đang cài đặt nhân Wine",
+        .wineProgressPreparing: "Đang kết nối máy chủ tải xuống...",
+        .wineProgressDownloading: "Đang tải nhân Wine: %d MB / %d MB (%d%%)",
+        .wineProgressExtracting: "Đang giải nén và cấu hình nhân Wine...",
+        .errorWineInstallFailed: "Không thể cài đặt nhân Wine: %@",
+        .errorPortableExtractionFailed: "Không thể giải nén gói ứng dụng portable: %@"
     ]
 }

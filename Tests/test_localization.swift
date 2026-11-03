@@ -46,6 +46,14 @@ struct LocalizationTestRunner {
             }
         }
 
+        // 6. Wine runtime prompts and download progress strings
+        manager.language = .english
+        assert(manager.string(.alertWineRequiredTitle).contains("Wine"))
+        assert(manager.string(.wineProgressDownloading, 50, 200, 25).contains("25%"))
+        manager.language = .vietnamese
+        assert(manager.string(.alertWineRequiredTitle).contains("Wine"))
+        assert(manager.string(.wineProgressDownloading, 50, 200, 25).contains("25%"))
+
         print("ALL LOCALIZATION TESTS PASSED")
     }
 }
