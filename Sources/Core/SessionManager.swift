@@ -1,7 +1,7 @@
 import Foundation
 import Darwin
 
-public struct PreparedSession {
+public struct PreparedSession: Equatable {
     public let sessionDirectory: URL
     public let swfFileURL: URL
     public let trustConfigURL: URL
