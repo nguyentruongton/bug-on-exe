@@ -113,22 +113,29 @@ else
 fi
 
 # 1.3 Personal Author Directory Paths in Working Tree
-# Exclude known generic documentation mocks (/Users/example, /Users/developer)
-PERSONAL_PATH_MATCHES=$(git grep -E '/Users/(stark|[a-zA-Z0-9_-]+/(Documents|Desktop|Downloads))' 2>/dev/null || true)
+CURRENT_USER="$(whoami)"
+PERSONAL_PATH_MATCHES=$(git grep --no-color -E "/Users/($CURRENT_USER|[a-zA-Z0-9_-]+/(Documents|Desktop|Downloads|Library))" 2>/dev/null | grep -v -E '/Users/(example|developer|<username>|runner)' || true)
 if [ -n "$PERSONAL_PATH_MATCHES" ]; then
     log_fail "Found hardcoded personal user directories in working tree:\n$PERSONAL_PATH_MATCHES"
 else
     log_pass "No personal user home directories detected in working tree"
 fi
 
-# 1.4 Commit History Scan
+# 1.4 Commit History Secret & Path Scan
 if git rev-parse --verify origin/main >/dev/null 2>&1; then
     COMMIT_RANGE="origin/main..HEAD"
 else
     COMMIT_RANGE="HEAD"
 fi
 
-HISTORICAL_PERSONAL_PATHS=$(git log -p "$COMMIT_RANGE" -- . ':(exclude)docs/superpowers' 2>/dev/null | grep -E '^\+.*\/Users\/(stark|[a-zA-Z0-9_-]+\/(Documents|Desktop|Downloads))' || true)
+HISTORICAL_SECRETS=$(git log --no-color -p "$COMMIT_RANGE" -- . ':(exclude)docs' 2>/dev/null | grep -E '^\+.*(BEGIN (RSA|DSA|EC|OPENSSH|PGP) PRIVATE KEY|gh[pousr]_[A-Za-z0-9_]{36,}|sk-[A-Za-z0-9]{32,}|AIza[0-9A-Za-z\-_]{35})' || true)
+if [ -n "$HISTORICAL_SECRETS" ]; then
+    log_fail "Found unpushed commit diffs containing private keys or API tokens:\n$HISTORICAL_SECRETS"
+else
+    log_pass "Unpushed commit range ($COMMIT_RANGE) is clean of added private keys and API tokens"
+fi
+
+HISTORICAL_PERSONAL_PATHS=$(git log --no-color -p "$COMMIT_RANGE" 2>/dev/null | grep -E "^\+.*\/Users\/($CURRENT_USER|[a-zA-Z0-9_-]+\/(Documents|Desktop|Downloads|Library))" | grep -v -E '/Users/(example|developer|<username>|runner)' || true)
 if [ -n "$HISTORICAL_PERSONAL_PATHS" ]; then
     log_fail "Found unpushed commit diffs containing personal home directories:\n$HISTORICAL_PERSONAL_PATHS"
 else
@@ -218,10 +225,10 @@ fi
 log_suite "Suite 4: Git Hygiene & Packaging Check"
 
 # 4.1 Git Ignore Verification
-if grep -q "Vendor/\*" .gitignore && grep -q "!Vendor/checksums.sha256" .gitignore; then
-    log_pass ".gitignore correctly ignores Vendor/* while tracking Vendor/checksums.sha256"
+if grep -q "dist/" .gitignore && grep -q "build/" .gitignore && grep -q "Vendor/\*" .gitignore && grep -q "!Vendor/checksums.sha256" .gitignore; then
+    log_pass ".gitignore correctly ignores dist/, build/, and Vendor/* while tracking Vendor/checksums.sha256"
 else
-    log_fail ".gitignore missing required rules for Vendor/ tracking"
+    log_fail ".gitignore missing required rules for dist/, build/, or Vendor/ tracking"
 fi
 
 # 4.2 Tracked Binaries in Git Index
@@ -272,6 +279,8 @@ if [ "$VERIFY_DIST" -eq 1 ]; then
         else
             log_fail "Packaged macOS application bundle ($APP_PATH) code signature validation failed"
         fi
+    else
+        log_fail "Packaged macOS application bundle ($APP_PATH) is missing"
     fi
 fi
 
