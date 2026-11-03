@@ -53,16 +53,24 @@ echo "==> Verifying 64-bit Flash Player Projector architecture..."
 file "$VENDOR_DIR/Flash Player.app/Contents/MacOS/Flash Player" | grep "Mach-O 64-bit executable x86_64"
 
 # 2. Generate and Compile AppIcon (Adaptive for macOS 26+ and Legacy icns)
-echo "==> Generating AppIcon assets from gemini-svg.svg..."
-ICONSET_DIR="$DIST_DIR/AppIcon.iconset"
-rm -rf "$ICONSET_DIR"
-mkdir -p "$ICONSET_DIR"
+if [ -f "$PROJ_ROOT/gemini-svg.svg" ]; then
+    echo "==> Generating AppIcon assets from gemini-svg.svg..."
+    ICONSET_DIR="$DIST_DIR/AppIcon.iconset"
+    rm -rf "$ICONSET_DIR"
+    mkdir -p "$ICONSET_DIR"
 
-swift "$PROJ_ROOT/scripts/generate_app_icon.swift" "$DIST_DIR" "$PROJ_ROOT"
+    swift "$PROJ_ROOT/scripts/generate_app_icon.swift" "$DIST_DIR" "$PROJ_ROOT"
 
-echo "==> Packaging AppIcon.icns for legacy macOS..."
-iconutil -c icns "$ICONSET_DIR" -o "$DIST_DIR/AppIcon.icns"
-rm -rf "$ICONSET_DIR"
+    echo "==> Packaging AppIcon.icns for legacy macOS..."
+    iconutil -c icns "$ICONSET_DIR" -o "$DIST_DIR/AppIcon.icns"
+    rm -rf "$ICONSET_DIR"
+elif [ ! -f "$DIST_DIR/AppIcon.icns" ]; then
+    ICONSET_DIR="$DIST_DIR/AppIcon.iconset"
+    mkdir -p "$ICONSET_DIR"
+    cp -R "$PROJ_ROOT/Resources/Assets.xcassets/AppIcon.appiconset/"* "$ICONSET_DIR/" 2>/dev/null || true
+    iconutil -c icns "$ICONSET_DIR" -o "$DIST_DIR/AppIcon.icns" 2>/dev/null || true
+    rm -rf "$ICONSET_DIR"
+fi
 
 # 3. Assemble Bug On EXE.app bundle
 rm -rf "$APP_BUNDLE"

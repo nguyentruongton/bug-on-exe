@@ -5,3 +5,5 @@ Vendor/*
 build/
 *.o
 .DS_Store
+docs/
+gemini-svg.svg

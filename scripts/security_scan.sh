@@ -225,10 +225,10 @@ fi
 log_suite "Suite 4: Git Hygiene & Packaging Check"
 
 # 4.1 Git Ignore Verification
-if grep -q "dist/" .gitignore && grep -q "build/" .gitignore && grep -q "Vendor/\*" .gitignore && grep -q "!Vendor/checksums.sha256" .gitignore; then
-    log_pass ".gitignore correctly ignores dist/, build/, and Vendor/* while tracking Vendor/checksums.sha256"
+if grep -q "dist/" .gitignore && grep -q "build/" .gitignore && grep -q "Vendor/\*" .gitignore && grep -q "!Vendor/checksums.sha256" .gitignore && grep -q "docs/" .gitignore && grep -q "gemini-svg.svg" .gitignore; then
+    log_pass ".gitignore correctly ignores dist/, build/, docs/, gemini-svg.svg, and Vendor/* while tracking Vendor/checksums.sha256"
 else
-    log_fail ".gitignore missing required rules for dist/, build/, or Vendor/ tracking"
+    log_fail ".gitignore missing required rules for dist/, build/, docs/, gemini-svg.svg, or Vendor/ tracking"
 fi
 
 # 4.2 Tracked Binaries in Git Index
