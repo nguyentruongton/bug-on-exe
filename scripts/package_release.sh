@@ -9,6 +9,11 @@ APP_BUNDLE="$DIST_DIR/$APP_NAME"
 ZIP_PATH="$DIST_DIR/Bug-On-EXE-macOS.zip"
 DMG_PATH="$DIST_DIR/Bug-On-EXE-macOS.dmg"
 
+if [ "${SKIP_SECURITY_SCAN:-0}" != "1" ]; then
+    echo "==> Running pre-packaging security scan..."
+    bash "$SCRIPT_DIR/security_scan.sh" --strict
+fi
+
 if [ "${SKIP_BUILD:-0}" != "1" ] || [ ! -d "$APP_BUNDLE" ]; then
     bash "$SCRIPT_DIR/build_app.sh"
 fi
@@ -34,3 +39,8 @@ hdiutil create \
 
 echo "==> Release artifacts ready:"
 ls -lh "$ZIP_PATH" "$DMG_PATH"
+
+if [ "${SKIP_SECURITY_SCAN:-0}" != "1" ]; then
+    echo "==> Verifying packaged release distribution..."
+    bash "$SCRIPT_DIR/security_scan.sh" --verify-dist
+fi
