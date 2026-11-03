@@ -106,21 +106,36 @@ public final class ProjectorRunner {
     }
 
     public static func run(fileURL: URL, completion: @escaping (Result<Void, Error>) -> Void) {
+        var hasCompleted = false
+        let lock = NSLock()
+        let safeCompletion: (Result<Void, Error>) -> Void = { result in
+            lock.lock()
+            guard !hasCompleted else {
+                lock.unlock()
+                return
+            }
+            hasCompleted = true
+            lock.unlock()
+            DispatchQueue.main.async {
+                completion(result)
+            }
+        }
+
         DispatchQueue.global(qos: .userInitiated).async {
             let plan: ExecutionPlan
             do {
                 plan = try prepareExecutionPlan(fileURL: fileURL)
             } catch {
-                DispatchQueue.main.async { completion(.failure(error)) }
+                safeCompletion(.failure(error))
                 return
             }
 
             DispatchQueue.main.async {
                 switch plan {
                 case .flash(let session):
-                    launchFlash(session: session, completion: completion)
+                    launchFlash(session: session, completion: safeCompletion)
                 case .windows(let targetExeURL, _):
-                    launchWindows(sourceFileURL: fileURL, targetExeURL: targetExeURL, completion: completion)
+                    launchWindows(sourceFileURL: fileURL, targetExeURL: targetExeURL, completion: safeCompletion)
                 }
             }
         }
@@ -189,7 +204,6 @@ public final class ProjectorRunner {
         progressWC.onCancel = {
             downloadTask?.cancel()
             activeWineProgressController = nil
-            completion(.success(()))
         }
 
         downloadTask = wineMgr.downloadAndInstallWine(
@@ -203,7 +217,11 @@ public final class ProjectorRunner {
                 case .success(let installedWineBin):
                     wineMgr.launchWindowsExecutable(exeURL: targetExeURL, wineBinaryURL: installedWineBin, completion: completion)
                 case .failure(let error):
-                    completion(.failure(error))
+                    if let runtimeErr = error as? WineRuntimeError, runtimeErr == .cancelled {
+                        completion(.success(()))
+                    } else {
+                        completion(.failure(error))
+                    }
                 }
             }
         )

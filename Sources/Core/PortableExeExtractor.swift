@@ -103,6 +103,8 @@ public enum PortableExeExtractor {
                 } else {
                     exeToken = String(afterQuote)
                 }
+            } else if unquoted.lowercased().hasSuffix(".exe") && !unquoted.contains(" -") && !unquoted.contains(" /") {
+                exeToken = unquoted
             } else {
                 exeToken = unquoted.components(separatedBy: .whitespaces).first ?? unquoted
             }
@@ -195,7 +197,9 @@ public final class PortableAppSessionManager {
         let resolvedExecutableURL = try findExecutable(in: sessionDir, preferredRelativePath: runProgram, fallbackBaseName: baseName)
 
         // Store relative path in .extracted_ok marker
-        let relPath = resolvedExecutableURL.path.replacingOccurrences(of: sessionDir.path + "/", with: "")
+        let basePrefix = sessionDir.standardizedFileURL.path + "/"
+        let fullPath = resolvedExecutableURL.standardizedFileURL.path
+        let relPath = fullPath.hasPrefix(basePrefix) ? String(fullPath.dropFirst(basePrefix.count)) : resolvedExecutableURL.lastPathComponent
         try relPath.write(to: markerURL, atomically: true, encoding: .utf8)
 
         return resolvedExecutableURL

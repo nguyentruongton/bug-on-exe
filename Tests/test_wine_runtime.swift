@@ -52,7 +52,6 @@ struct WineRuntimeTestRunner {
         let runtimeDir2 = tempRoot.appendingPathComponent("Runtime2", isDirectory: true)
         let mgr2 = WineRuntimeManager(runtimeRootURL: runtimeDir2, winePrefixURL: prefixDir, additionalSearchPaths: [])
         var sawStages: [WineInstallStage] = []
-        let sem = DispatchSemaphore(value: 0)
         var installResult: Result<URL, Error>?
 
         mgr2.downloadAndInstallWine(
@@ -62,16 +61,39 @@ struct WineRuntimeTestRunner {
             },
             completion: { result in
                 installResult = result
-                sem.signal()
             }
         )
-        _ = sem.wait(timeout: .now() + 10.0)
+        let start1 = Date()
+        while installResult == nil && Date().timeIntervalSince(start1) < 10.0 {
+            RunLoop.current.run(mode: .default, before: Date(timeIntervalSinceNow: 0.05))
+        }
         guard case .success(let finalBin) = installResult else {
             fatalError("Expected downloadAndInstallWine to succeed, got \(String(describing: installResult))")
         }
         assert(finalBin.path == runtimeDir2.appendingPathComponent("Wine Devel.app/Contents/Resources/wine/bin/wine").path)
         assert(sawStages.contains(.preparing))
         assert(sawStages.contains(.extracting))
+
+        // 5. Verify cancel reports WineRuntimeError.cancelled and only completes once
+        var cancelResults: [Result<URL, Error>] = []
+        let dummyHTTPURL = URL(string: "http://127.0.0.1:9/dummy.tar.xz")!
+        let cancelTask = mgr2.downloadAndInstallWine(
+            from: dummyHTTPURL,
+            progressHandler: { _ in },
+            completion: { result in
+                cancelResults.append(result)
+            }
+        )
+        cancelTask?.cancel()
+        let start2 = Date()
+        while cancelResults.isEmpty && Date().timeIntervalSince(start2) < 5.0 {
+            RunLoop.current.run(mode: .default, before: Date(timeIntervalSinceNow: 0.05))
+        }
+        assert(cancelResults.count == 1, "Must complete exactly once on cancellation")
+        guard case .failure(let err) = cancelResults.first, let wineErr = err as? WineRuntimeError else {
+            fatalError("Expected WineRuntimeError on cancel, got \(String(describing: cancelResults.first))")
+        }
+        assert(wineErr == .cancelled, "Expected .cancelled, got \(wineErr)")
 
         print("ALL WINE RUNTIME TESTS PASSED")
     }

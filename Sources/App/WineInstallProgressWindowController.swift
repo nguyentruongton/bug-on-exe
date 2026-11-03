@@ -58,7 +58,12 @@ public final class WineInstallProgressWindowController: NSWindowController {
         cancelButton.target = self
         cancelButton.action = #selector(handleCancel)
 
-        let stack = NSStackView(views: [titleLabel, statusLabel, progressBar, cancelButton])
+        // Put cancelButton inside an aligned horizontal row so it does not stretch across the whole width
+        let buttonRow = NSStackView(views: [NSView(), cancelButton])
+        buttonRow.orientation = .horizontal
+        buttonRow.spacing = 10
+
+        let stack = NSStackView(views: [titleLabel, statusLabel, progressBar, buttonRow])
         stack.orientation = .vertical
         stack.alignment = .leading
         stack.spacing = 10
@@ -72,7 +77,7 @@ public final class WineInstallProgressWindowController: NSWindowController {
             stack.trailingAnchor.constraint(equalTo: contentView.trailingAnchor, constant: -20),
             stack.bottomAnchor.constraint(equalTo: contentView.bottomAnchor, constant: -18),
             progressBar.widthAnchor.constraint(equalTo: stack.widthAnchor),
-            cancelButton.trailingAnchor.constraint(equalTo: stack.trailingAnchor)
+            buttonRow.widthAnchor.constraint(equalTo: stack.widthAnchor)
         ])
     }
 
@@ -84,14 +89,21 @@ public final class WineInstallProgressWindowController: NSWindowController {
             progressBar.startAnimation(nil)
             statusLabel.stringValue = l10n.string(.wineProgressPreparing)
         case .downloading(let receivedBytes, let expectedBytes):
-            progressBar.isIndeterminate = false
-            progressBar.minValue = 0
-            progressBar.maxValue = 100
-            let receivedMB = Int(receivedBytes / (1024 * 1024))
-            let totalMB = Int(max(1, expectedBytes / (1024 * 1024)))
-            let pct = expectedBytes > 0 ? Int((Double(receivedBytes) / Double(expectedBytes)) * 100) : 0
-            progressBar.doubleValue = Double(pct)
-            statusLabel.stringValue = l10n.string(.wineProgressDownloading, receivedMB, totalMB, pct)
+            if expectedBytes > 0 {
+                progressBar.isIndeterminate = false
+                progressBar.minValue = 0
+                progressBar.maxValue = 100
+                let receivedMB = Int(receivedBytes / (1024 * 1024))
+                let totalMB = Int(max(1, expectedBytes / (1024 * 1024)))
+                let pct = Int((Double(receivedBytes) / Double(expectedBytes)) * 100)
+                progressBar.doubleValue = Double(pct)
+                statusLabel.stringValue = l10n.string(.wineProgressDownloading, receivedMB, totalMB, pct)
+            } else {
+                progressBar.isIndeterminate = true
+                progressBar.startAnimation(nil)
+                let receivedMB = Int(receivedBytes / (1024 * 1024))
+                statusLabel.stringValue = "\(receivedMB) MB downloaded..."
+            }
         case .extracting:
             progressBar.isIndeterminate = true
             progressBar.startAnimation(nil)

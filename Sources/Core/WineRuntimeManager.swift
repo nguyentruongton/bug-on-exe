@@ -150,9 +150,13 @@ public final class WineRuntimeManager: NSObject {
         do {
             let proc = try buildLaunchProcess(exeURL: exeURL, wineBinaryURL: wineBinaryURL)
             try proc.run()
-            completion(.success(()))
+            DispatchQueue.main.async {
+                completion(.success(()))
+            }
         } catch {
-            completion(.failure(WineRuntimeError.launchFailed(error.localizedDescription)))
+            DispatchQueue.main.async {
+                completion(.failure(WineRuntimeError.launchFailed(error.localizedDescription)))
+            }
         }
     }
 
@@ -167,41 +171,46 @@ public final class WineRuntimeManager: NSObject {
         // Handle local file URLs directly (used in unit tests)
         if downloadURL.isFileURL {
             DispatchQueue.global(qos: .userInitiated).async {
-                progressHandler(.preparing)
-                progressHandler(.extracting)
+                DispatchQueue.main.async { progressHandler(.preparing) }
+                DispatchQueue.main.async { progressHandler(.extracting) }
                 do {
                     let bin = try self.extractWineArchive(at: downloadURL)
-                    completion(.success(bin))
+                    DispatchQueue.main.async { completion(.success(bin)) }
                 } catch {
-                    completion(.failure(error))
+                    DispatchQueue.main.async { completion(.failure(error)) }
                 }
             }
             return nil
         }
 
-        progressHandler(.preparing)
+        DispatchQueue.main.async { progressHandler(.preparing) }
+
         let delegate = WineDownloadSessionDelegate(
-            progressHandler: progressHandler,
+            progressHandler: { stage in
+                DispatchQueue.main.async { progressHandler(stage) }
+            },
             onSuccess: { [weak self] tempLocation in
                 guard let self = self else { return }
-                progressHandler(.extracting)
+                DispatchQueue.main.async { progressHandler(.extracting) }
                 DispatchQueue.global(qos: .userInitiated).async {
                     do {
                         let bin = try self.extractWineArchive(at: tempLocation)
                         try? FileManager.default.removeItem(at: tempLocation)
-                        completion(.success(bin))
+                        DispatchQueue.main.async { completion(.success(bin)) }
                     } catch {
                         try? FileManager.default.removeItem(at: tempLocation)
-                        completion(.failure(error))
+                        DispatchQueue.main.async { completion(.failure(error)) }
                     }
                 }
             },
             onFailure: { error in
-                completion(.failure(WineRuntimeError.downloadFailed(error.localizedDescription)))
+                DispatchQueue.main.async { completion(.failure(error)) }
             }
         )
 
         let session = URLSession(configuration: .default, delegate: delegate, delegateQueue: nil)
+        delegate.sessionToInvalidate = session
+
         let task = session.downloadTask(with: downloadURL)
         task.resume()
         return task
@@ -212,6 +221,9 @@ private final class WineDownloadSessionDelegate: NSObject, URLSessionDownloadDel
     private let progressHandler: (WineInstallStage) -> Void
     private let onSuccess: (URL) -> Void
     private let onFailure: (Error) -> Void
+    private var hasFinished = false
+    private let lock = NSLock()
+    weak var sessionToInvalidate: URLSession?
 
     init(
         progressHandler: @escaping (WineInstallStage) -> Void,
@@ -231,24 +243,47 @@ private final class WineDownloadSessionDelegate: NSObject, URLSessionDownloadDel
         totalBytesWritten: Int64,
         totalBytesExpectedToWrite: Int64
     ) {
-        DispatchQueue.main.async {
-            self.progressHandler(.downloading(receivedBytes: totalBytesWritten, expectedBytes: totalBytesExpectedToWrite))
-        }
+        progressHandler(.downloading(receivedBytes: totalBytesWritten, expectedBytes: totalBytesExpectedToWrite))
     }
 
     func urlSession(_ session: URLSession, downloadTask: URLSessionDownloadTask, didFinishDownloadingTo location: URL) {
+        lock.lock()
+        guard !hasFinished else {
+            lock.unlock()
+            return
+        }
+        hasFinished = true
+        lock.unlock()
+
+        session.finishTasksAndInvalidate()
+
         let tempTarget = FileManager.default.temporaryDirectory.appendingPathComponent("wine-\(UUID().uuidString).tar.xz")
         do {
             try FileManager.default.moveItem(at: location, to: tempTarget)
             onSuccess(tempTarget)
         } catch {
-            onFailure(error)
+            onFailure(WineRuntimeError.extractionFailed(error.localizedDescription))
         }
     }
 
     func urlSession(_ session: URLSession, task: URLSessionTask, didCompleteWithError error: Error?) {
-        if let error = error {
-            onFailure(error)
+        guard let error = error else { return }
+
+        lock.lock()
+        guard !hasFinished else {
+            lock.unlock()
+            return
+        }
+        hasFinished = true
+        lock.unlock()
+
+        session.finishTasksAndInvalidate()
+
+        let nsErr = error as NSError
+        if nsErr.domain == NSURLErrorDomain && nsErr.code == NSURLErrorCancelled {
+            onFailure(WineRuntimeError.cancelled)
+        } else {
+            onFailure(WineRuntimeError.downloadFailed(error.localizedDescription))
         }
     }
 }
