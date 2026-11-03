@@ -19,6 +19,11 @@ public final class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     public func applicationDidFinishLaunching(_ notification: Notification) {
+        // Dynamically bind adaptive app icon from Asset Catalog for Light/Dark mode
+        if let dynamicIcon = NSImage(named: "AppIconImage") {
+            NSApp.applicationIconImage = dynamicIcon
+        }
+
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.15) { [weak self] in
             guard let self = self else { return }
             if !self.didOpenFileFromFinder {

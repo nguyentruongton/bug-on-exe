@@ -69,7 +69,6 @@ rm -rf "$APP_BUNDLE"
 mkdir -p "$APP_BUNDLE/Contents/MacOS" "$APP_BUNDLE/Contents/Resources"
 
 cp "$PROJ_ROOT/Resources/Info.plist" "$APP_BUNDLE/Contents/Info.plist"
-cp "$DIST_DIR/AppIcon.icns" "$APP_BUNDLE/Contents/Resources/AppIcon.icns"
 cp -R "$PROJ_ROOT/Resources/en.lproj" "$APP_BUNDLE/Contents/Resources/en.lproj"
 cp -R "$PROJ_ROOT/Resources/vi.lproj" "$APP_BUNDLE/Contents/Resources/vi.lproj"
 cp -R "$VENDOR_DIR/Flash Player.app" "$APP_BUNDLE/Contents/Resources/Flash Player.app"
@@ -82,10 +81,17 @@ xcrun actool "$PROJ_ROOT/Resources/Assets.xcassets" \
   --minimum-deployment-target 13.0 \
   --app-icon AppIcon \
   --output-partial-info-plist "$DIST_DIR/assetcatalog_generated_info.plist"
+rm -f "$DIST_DIR/assetcatalog_generated_info.plist"
 
-# Verify compiled icon deliverables exist inside the bundle
+# Copy full 10-resolution AppIcon.icns AFTER actool so it is not truncated
+echo "==> Preserving full-resolution AppIcon.icns..."
+cp "$DIST_DIR/AppIcon.icns" "$APP_BUNDLE/Contents/Resources/AppIcon.icns"
+
+# Verify compiled icon deliverables exist inside the bundle and has full assets (> 500KB)
 test -f "$APP_BUNDLE/Contents/Resources/AppIcon.icns"
 test -f "$APP_BUNDLE/Contents/Resources/Assets.car"
+ICNS_SIZE=$(stat -f%z "$APP_BUNDLE/Contents/Resources/AppIcon.icns")
+[ "$ICNS_SIZE" -gt 500000 ] || { echo "ERROR: AppIcon.icns too small ($ICNS_SIZE bytes)"; exit 1; }
 
 echo "==> Compiling BugOnMacExe binary (x86_64)..."
 swiftc \
